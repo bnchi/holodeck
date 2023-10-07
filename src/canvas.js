@@ -1,7 +1,12 @@
+// Require refactroing maybe lets move to typescript ??
+
 const TOOLS = {
   MOVE_SHAPE: 'move_shape',
   FREE_DRAW: 'free_draw'
 }
+
+let canvasOffsetX
+let canvasOffsetY
 
 export class Shape {
 	constructor(x, y, w, h, fill) {
@@ -40,6 +45,9 @@ export class State {
     this.dragOffsetY = 0
     this.isDragging = false
 
+    canvasOffsetX = this.canvas.getBoundingClientRect().left + window.scrollX;
+    canvasOffsetY = this.canvas.getBoundingClientRect().top + window.scrollY;
+
     setInterval(this.draw.bind(this), 30)
     this.registerEvents()
   }
@@ -48,6 +56,11 @@ export class State {
     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this))
     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this))
     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this))
+
+    window.addEventListener('scroll', () => {
+      canvasOffsetX = this.canvas.getBoundingClientRect().left
+      canvasOffsetY = this.canvas.getBoundingClientRect().top
+    })
   }
    
   handleMouseDown(event) {
@@ -122,8 +135,8 @@ export class State {
   
   getPos(event) {
   	return {
-    	x: event.clientX - this.canvas.offsetLeft,
-      y: event.clientY - this.canvas.offsetTop
+    	x: event.clientX - canvasOffsetX,
+      y: event.clientY - canvasOffsetY    
     }
   }
 }
@@ -160,8 +173,8 @@ class FreeHandShape {
     const originalMouseUp = canvas.onmouseup
     canvas.onmousemove = (event) => {
     	const mousePosition = {
-        x: event.clientX - canvas.offsetLeft,
-        y: event.clientY - canvas.offsetTop
+        x: event.clientX - canvasOffsetX,
+        y: event.clientY - canvasOffsetY
       }
 
       this.points.push({x: mousePosition.x, y: mousePosition.y})
