@@ -1,5 +1,5 @@
 import {PDFDrawer} from '../pdf'
-import { State } from './canvas'
+import { Canvas, State } from './canvas'
 
 async function main() {
   const pdfCanvas = document.getElementById('pdfCanvas')
@@ -12,23 +12,26 @@ async function main() {
   await pdfObj.loadMainPage(1)
   await pdfObj.loadPagesPreview()
 
-  const currentState = new State(drawingCanvas)
+  const pagesState = [
+    new State(),
+    new State(),
+    new State()
+  ]
+
+  const canvas = new Canvas(drawingCanvas, pagesState[0])
 
   for (const child of pdfPagesElem.childNodes) {
-    child.addEventListener('click', (event) => {
-      loadToCanvas(event, pdfObj)
+    child.addEventListener('click', async (event) => {
+      const pageId = parseInt(event.target.id.split("-")[2])
+      await pdfObj.loadMainPage(pageId)
+      canvas.setNewState(pagesState[pageId - 1])
     })
   }
 
   document.getElementById("save-pdf").addEventListener('click', () => {
-    const points = currentState.getAllShapesPoints()
-    pdfObj.saveToDevice(points[0].points)
+    // take all of states and draw them into the pdf
+    pdfObj.saveToDevice(pagesState)
   })
-}
-
-async function loadToCanvas(event, pdfObj) {
-  const pageId = event.target.id.split("-")[2]
-  await pdfObj.loadMainPage(parseInt(pageId))
 }
 
 main()

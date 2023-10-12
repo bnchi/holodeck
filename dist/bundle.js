@@ -55167,21 +55167,33 @@
 	    }
 	  }
 
-	  async saveToDevice(canvasPoints) {
-	    let svgPath = `M ${canvasPoints[0].x / 1.5} ${canvasPoints[0].y / 1.5} `;
+	  async saveToDevice(pagesState) {
+	    let pageNumber = 0;
+	    for (const pageState of pagesState) {
+	      const canvasShapes = pageState.getShapes();
 
-	    for (let i = 1; i < canvasPoints.length; i++) {
-	      svgPath += `L ${canvasPoints[i].x / 1.5} ${canvasPoints[i].y / 1.5} `;
+	      // go through every shape and invoke the correct drawing method
+	      for (const canvasShape of canvasShapes) {
+	        // now all the shapes are paths so we're just gonna treat it like that until we add more shapes
+	        const canvasPoints = canvasShape.points;
+	        let svgPath = `M ${canvasPoints[0].x / 1.5} ${canvasPoints[0].y / 1.5} `;
+
+	        for (let i = 1; i < canvasPoints.length; i++) {
+	          svgPath += `L ${canvasPoints[i].x / 1.5} ${canvasPoints[i].y / 1.5} `;
+	        }
+
+	        const currentPage = this.pdfDoc.getPage(pageNumber);
+
+	        currentPage.moveTo(0, currentPage.getHeight());
+	        currentPage.drawSvgPath(svgPath, {
+	          borderLineCap: LineCapStyle.Round,
+	          borderWidth: 7,
+	          borderColor: rgb(1, 0, 0)
+	        });
+	      }
+
+	      pageNumber += 1;
 	    }
-
-	    const currentPage = this.pdfDoc.getPage(0);
-
-	    currentPage.moveTo(0, currentPage.getHeight());
-	    currentPage.drawSvgPath(svgPath, {
-	      borderLineCap: LineCapStyle.Round,
-	      borderWidth: 7,
-	      borderColor: rgb(1, 0, 0)
-	    });
 
 	    const pdfBytes = await this.pdfDoc.save();
 	    FileSaver_min.saveAs(new Blob([pdfBytes], { type: 'application/pdf' }));
@@ -55199,7 +55211,25 @@
 	let canvasOffsetY;
 
 	class State {
-	  constructor(canvas) {
+	  constructor() {
+	    this.shapes = [];
+	  }
+
+	  addShape(shape) {
+	    this.shapes.push(shape);
+	  }
+
+	  getShapes() {
+	    return this.shapes
+	  }
+	}
+
+	class Canvas {
+	  constructor(canvas, shapes) {
+	    if (!shapes) {
+	      throw new Error("Must provide shapes state")
+	    }
+
 	  	this.canvas = canvas;
 	    this.ctx = canvas.getContext('2d');
 
@@ -55209,7 +55239,7 @@
 	    this.shouldRedraw = false;
 	    this.currentTool = TOOLS.FREE_DRAW;
 
-	    this.shapes = [];
+	    this.state = shapes;
 	    this.selectedShape = null;
 
 	    this.dragOffsetX = 0;
@@ -55223,16 +55253,13 @@
 	    this.registerEvents();
 	  }
 
-	  getAllShapesPoints() {
-	    const points = [];
-
-	    for (const shape of this.shapes) {
-	      if (shape instanceof FreeHandShape) {
-	        points.push(shape);
-	      }
+	  setNewState(shapes) {
+	    if (!shapes) {
+	      throw new Error("Must provide shapes")
 	    }
 
-	    return points
+	    this.state = shapes;
+	    this.shouldRedraw = true;
 	  }
 
 	  registerEvents() {
@@ -55255,11 +55282,11 @@
 	          lineCap: 'round'
 	        });
 	        freehandDrawingShape.startDrawing(this.canvas, mousePosition);
-	        this.shapes.push(freehandDrawingShape);
+	        this.state.addShape(freehandDrawingShape);
 	        break;
 	      }
 	      case TOOLS.MOVE_SHAPE: {
-	        for (const shape of this.shapes) {
+	        for (const shape of this.state.getShapes()) {
 	          if (shape.contains(mousePosition.x, mousePosition.y)) {
 	            this.selectedShape = shape; 
 	            this.dragOffsetX = mousePosition.x - shape.x;
@@ -55293,7 +55320,7 @@
 	  }
 	  
 	  add(shape) {
-	    this.shapes.push(shape);
+	    this.state.addShape(shape);
 	    this.shouldRedraw = true;
 	  }
 	  
@@ -55304,7 +55331,7 @@
 
 	    this.clear();
 
-	  	for (const shape of this.shapes) {
+	  	for (const shape of this.state.getShapes()) {
 	    	shape.draw(this.ctx);
 	    }
 
@@ -55401,6 +55428,8 @@
 
 	    this.calculateBoundingBox();
 	    ctx.strokeStyle = "red";
+	    ctx.lineWidth = 2;
+	    ctx.setLineDash([2, 4]);
 	    ctx.strokeRect(this.minX, this.minY, this.w, this.h);
 	  }
 
@@ -55444,23 +55473,26 @@
 	  await pdfObj.loadMainPage(1);
 	  await pdfObj.loadPagesPreview();
 
-	  const currentState = new State(drawingCanvas);
+	  const pagesState = [
+	    new State(),
+	    new State(),
+	    new State()
+	  ];
+
+	  const canvas = new Canvas(drawingCanvas, pagesState[0]);
 
 	  for (const child of pdfPagesElem.childNodes) {
-	    child.addEventListener('click', (event) => {
-	      loadToCanvas(event, pdfObj);
+	    child.addEventListener('click', async (event) => {
+	      const pageId = parseInt(event.target.id.split("-")[2]);
+	      await pdfObj.loadMainPage(pageId);
+	      canvas.setNewState(pagesState[pageId - 1]);
 	    });
 	  }
 
 	  document.getElementById("save-pdf").addEventListener('click', () => {
-	    const points = currentState.getAllShapesPoints();
-	    pdfObj.saveToDevice(points[0].points);
+	    // take all of states and draw them into the pdf
+	    pdfObj.saveToDevice(pagesState);
 	  });
-	}
-
-	async function loadToCanvas(event, pdfObj) {
-	  const pageId = event.target.id.split("-")[2];
-	  await pdfObj.loadMainPage(parseInt(pageId));
 	}
 
 	main();

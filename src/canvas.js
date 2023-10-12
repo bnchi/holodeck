@@ -29,7 +29,25 @@ export class Shape {
 }
 
 export class State {
-  constructor(canvas) {
+  constructor() {
+    this.shapes = []
+  }
+
+  addShape(shape) {
+    this.shapes.push(shape)
+  }
+
+  getShapes() {
+    return this.shapes
+  }
+}
+
+export class Canvas {
+  constructor(canvas, shapes) {
+    if (!shapes) {
+      throw new Error("Must provide shapes state")
+    }
+
   	this.canvas = canvas
     this.ctx = canvas.getContext('2d')
 
@@ -39,7 +57,7 @@ export class State {
     this.shouldRedraw = false
     this.currentTool = TOOLS.FREE_DRAW
 
-    this.shapes = []
+    this.state = shapes
     this.selectedShape = null
 
     this.dragOffsetX = 0
@@ -53,16 +71,13 @@ export class State {
     this.registerEvents()
   }
 
-  getAllShapesPoints() {
-    const points = []
-
-    for (const shape of this.shapes) {
-      if (shape instanceof FreeHandShape) {
-        points.push(shape)
-      }
+  setNewState(shapes) {
+    if (!shapes) {
+      throw new Error("Must provide shapes")
     }
 
-    return points
+    this.state = shapes
+    this.shouldRedraw = true
   }
 
   registerEvents() {
@@ -85,11 +100,11 @@ export class State {
           lineCap: 'round'
         })
         freehandDrawingShape.startDrawing(this.canvas, mousePosition)
-        this.shapes.push(freehandDrawingShape)
+        this.state.addShape(freehandDrawingShape)
         break;
       }
       case TOOLS.MOVE_SHAPE: {
-        for (const shape of this.shapes) {
+        for (const shape of this.state.getShapes()) {
           if (shape.contains(mousePosition.x, mousePosition.y)) {
             this.selectedShape = shape 
             this.dragOffsetX = mousePosition.x - shape.x
@@ -123,7 +138,7 @@ export class State {
   }
   
   add(shape) {
-    this.shapes.push(shape)
+    this.state.addShape(shape)
     this.shouldRedraw = true
   }
   
@@ -134,7 +149,7 @@ export class State {
 
     this.clear()
 
-  	for (const shape of this.shapes) {
+  	for (const shape of this.state.getShapes()) {
     	shape.draw(this.ctx)
     }
 
@@ -231,6 +246,8 @@ class FreeHandShape {
 
     this.calculateBoundingBox()
     ctx.strokeStyle = "red"
+    ctx.lineWidth = 2
+    ctx.setLineDash([2, 4])
     ctx.strokeRect(this.minX, this.minY, this.w, this.h)
   }
 

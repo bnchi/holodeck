@@ -69,21 +69,33 @@ export class PDFDrawer {
     }
   }
 
-  async saveToDevice(canvasPoints) {
-    let svgPath = `M ${canvasPoints[0].x / 1.5} ${canvasPoints[0].y / 1.5} `;
+  async saveToDevice(pagesState) {
+    let pageNumber = 0
+    for (const pageState of pagesState) {
+      const canvasShapes = pageState.getShapes()
 
-    for (let i = 1; i < canvasPoints.length; i++) {
-      svgPath += `L ${canvasPoints[i].x / 1.5} ${canvasPoints[i].y / 1.5} `;
+      // go through every shape and invoke the correct drawing method
+      for (const canvasShape of canvasShapes) {
+        // now all the shapes are paths so we're just gonna treat it like that until we add more shapes
+        const canvasPoints = canvasShape.points
+        let svgPath = `M ${canvasPoints[0].x / 1.5} ${canvasPoints[0].y / 1.5} `;
+
+        for (let i = 1; i < canvasPoints.length; i++) {
+          svgPath += `L ${canvasPoints[i].x / 1.5} ${canvasPoints[i].y / 1.5} `;
+        }
+
+        const currentPage = this.pdfDoc.getPage(pageNumber)
+
+        currentPage.moveTo(0, currentPage.getHeight())
+        currentPage.drawSvgPath(svgPath, {
+          borderLineCap: LineCapStyle.Round,
+          borderWidth: 7,
+          borderColor: rgb(1, 0, 0)
+        })
+      }
+
+      pageNumber += 1
     }
-
-    const currentPage = this.pdfDoc.getPage(0)
-
-    currentPage.moveTo(0, currentPage.getHeight())
-    currentPage.drawSvgPath(svgPath, {
-      borderLineCap: LineCapStyle.Round,
-      borderWidth: 7,
-      borderColor: rgb(1, 0, 0)
-    })
 
     const pdfBytes = await this.pdfDoc.save()
     save.saveAs(new Blob([pdfBytes], { type: 'application/pdf' }))
