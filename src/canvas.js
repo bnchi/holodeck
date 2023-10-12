@@ -43,8 +43,8 @@ export class State {
 }
 
 export class Canvas {
-  constructor(canvas, shapes) {
-    if (!shapes) {
+  constructor(canvas, state) {
+    if (!state) {
       throw new Error("Must provide shapes state")
     }
 
@@ -57,7 +57,7 @@ export class Canvas {
     this.shouldRedraw = false
     this.currentTool = TOOLS.FREE_DRAW
 
-    this.state = shapes
+    this.state = state
     this.selectedShape = null
 
     this.dragOffsetX = 0
@@ -71,12 +71,12 @@ export class Canvas {
     this.registerEvents()
   }
 
-  setNewState(shapes) {
-    if (!shapes) {
+  setNewState(state) {
+    if (!state) {
       throw new Error("Must provide shapes")
     }
 
-    this.state = shapes
+    this.state = state
     this.shouldRedraw = true
   }
 

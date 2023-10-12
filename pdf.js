@@ -38,7 +38,7 @@ export class PDFDrawer {
 
   async loadMainPage(pageNumber) {
     const page = await this.doc.getPage(pageNumber)
-    const viewport = page.getViewport({ scale: 1.5 })
+    const viewport = page.getViewport({ scale: 1.25 })
 
     this.canvas.width = viewport.width
     this.canvas.height = viewport.height
@@ -78,10 +78,10 @@ export class PDFDrawer {
       for (const canvasShape of canvasShapes) {
         // now all the shapes are paths so we're just gonna treat it like that until we add more shapes
         const canvasPoints = canvasShape.points
-        let svgPath = `M ${canvasPoints[0].x / 1.5} ${canvasPoints[0].y / 1.5} `;
+        let svgPath = `M ${canvasPoints[0].x / 1.25} ${canvasPoints[0].y / 1.25} `;
 
         for (let i = 1; i < canvasPoints.length; i++) {
-          svgPath += `L ${canvasPoints[i].x / 1.5} ${canvasPoints[i].y / 1.5} `;
+          svgPath += `L ${canvasPoints[i].x / 1.25} ${canvasPoints[i].y / 1.25} `;
         }
 
         const currentPage = this.pdfDoc.getPage(pageNumber)
