@@ -3,12 +3,56 @@
 <head>
     <title>Holodeck</title>
     <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #e9e9e9;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+    
+    .editor {
+      position:relative;
+      overflow-y:auto;
+      width: 100%;
+    }
+
+    .pdf-layers {
+      display: flex;
+      flex-flow: column;
+      overflow: auto;
+      background: #fff;
+      padding: 5px;
+    }
+
+    .pdf-layers > * {
+      cursor: pointer;
+      margin-bottom: 1rem;
+      box-shadow: 1px 2px 7px 1px #a9a9a9;
+    }
+  </style>
 </head>
+
 <body>
-  <canvas id="drawingCanvas" width="1224" height="1584" style="box-shadow: 0 0 5px 5px;overflow: auto;">
-    Your browser does not support Canvas!
-  </canvas>
+  <div class="app">
+    <div class="pdf-layers"></div>
+    <button id="save-pdf">Saveee</button>
+    <div class="editor">
+      <div style="display:flex;justify-content:center;">
+      <canvas id="drawingCanvas" width="918" height="1188" style="position:absolute;">
+        Your browser does not support Canvas!
+      </canvas>
+      <canvas id="pdfCanvas" style="box-shadow: 0 0px 6px 1px #a9a9a9;">
+        Your browser does not support Canvas!
+      </canvas>
+      </div>
+    </div>
+  </div>
+
   <script src="dist/bundle.js"></script>
 </body>
 </html>
-

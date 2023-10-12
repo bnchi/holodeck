@@ -32,6 +32,7 @@ export class State {
   constructor(canvas) {
   	this.canvas = canvas
     this.ctx = canvas.getContext('2d')
+
     this.width = canvas.width
     this.height = canvas.height
     
@@ -48,16 +49,27 @@ export class State {
     canvasOffsetX = this.canvas.getBoundingClientRect().left + window.scrollX;
     canvasOffsetY = this.canvas.getBoundingClientRect().top + window.scrollY;
 
-    setInterval(this.draw.bind(this), 30)
+    setInterval(this.draw.bind(this), 20)
     this.registerEvents()
+  }
+
+  getAllShapesPoints() {
+    const points = []
+
+    for (const shape of this.shapes) {
+      if (shape instanceof FreeHandShape) {
+        points.push(shape)
+      }
+    }
+
+    return points
   }
 
   registerEvents() {
     this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this))
     this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this))
     this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this))
-
-    window.addEventListener('scroll', () => {
+    document.querySelector(".editor").addEventListener('scroll', () => {
       canvasOffsetX = this.canvas.getBoundingClientRect().left
       canvasOffsetY = this.canvas.getBoundingClientRect().top
     })
@@ -144,16 +156,16 @@ export class State {
 class FreeHandShape {
   constructor(style) {
     this.x = 0
-    this.y = 0   
+    this.y = 0
+    this.w = this.maxX - this.minX
+    this.h = this.maxY - this.minY
+    this.points = []
+
     this.minX = this.x
     this.minY = this.y
     this.maxX = this.x
     this.maxY = this.y
   
-    this.w = this.maxX - this.minX
-    this.h = this.maxY - this.minY
-    this.points = []
-
     this.style = style
   }
 
@@ -187,6 +199,8 @@ class FreeHandShape {
     canvas.onmouseup = () => {
     	// draw the bounding box
       ctx.strokeStyle = "red"
+      ctx.lineWidth = 2
+      ctx.setLineDash([2, 4])
       ctx.strokeRect(this.minX, this.minY, this.w, this.h)      
 
       canvas.onmousemove = originalMouseMove
