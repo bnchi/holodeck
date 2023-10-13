@@ -1,12 +1,9 @@
-// Require refactroing maybe lets move to typescript ??
+import MainEventHandler from './MainEventHandler'
 
-const TOOLS = {
+export const TOOLS = {
   MOVE_SHAPE: 'move_shape',
   FREE_DRAW: 'free_draw'
 }
-
-let canvasOffsetX
-let canvasOffsetY
 
 export class Shape {
 	constructor(x, y, w, h, fill) {
@@ -42,74 +39,97 @@ export class State {
   }
 }
 
-export class Canvas {
-  constructor(canvas, state) {
+export class SelectionBox {
+  constructor(canvas) { 
+    this.ctx = canvas.getContext('2d')
+    this.startX = 0
+    this.startY = 0
+  }
+
+  setStartX(x) {
+    this.startX = x
+  }
+
+  setStartY(y) {
+    this.startY = y
+  } 
+
+  draw(x, y) {
+    const width = x - this.startX
+    const height = y - this.startY
+
+    this.ctx.beginPath()
+    this.ctx.rect(this.startX, this.startY, width, height)
+    this.ctx.strokeStyle = "black"
+    this.ctx.lineWidth = 2
+    this.ctx.stroke()
+  }
+}
+
+export class Canvas extends MainEventHandler {
+  constructor(canvas, state, selectionBox) {
+    super(canvas)
+
     if (!state) {
       throw new Error("Must provide shapes state")
     }
 
-  	this.canvas = canvas
     this.ctx = canvas.getContext('2d')
 
     this.width = canvas.width
     this.height = canvas.height
     
-    this.shouldRedraw = false
     this.currentTool = TOOLS.FREE_DRAW
 
     this.state = state
     this.selectedShape = null
 
+    this.selectionBox = selectionBox
+
+    this.isDragging = false
+    this.isDrawing = false
+    this.isSelecting = false
+
     this.dragOffsetX = 0
     this.dragOffsetY = 0
-    this.isDragging = false
-
-    canvasOffsetX = this.canvas.getBoundingClientRect().left + window.scrollX;
-    canvasOffsetY = this.canvas.getBoundingClientRect().top + window.scrollY;
-
-    setInterval(this.draw.bind(this), 20)
-    this.registerEvents()
   }
 
   setNewState(state) {
-    if (!state) {
-      throw new Error("Must provide shapes")
-    }
-
     this.state = state
-    this.shouldRedraw = true
+    this.draw()
   }
 
-  registerEvents() {
-    this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this))
-    this.canvas.addEventListener("mousemove", this.handleMouseMove.bind(this))
-    this.canvas.addEventListener("mouseup", this.handleMouseUp.bind(this))
-    document.querySelector(".editor").addEventListener('scroll', () => {
-      canvasOffsetX = this.canvas.getBoundingClientRect().left
-      canvasOffsetY = this.canvas.getBoundingClientRect().top
-    })
+  setCurrentTool(tool) {
+    this.currentTool = tool
   }
    
   handleMouseDown(event) {
-    const mousePosition = this.getPos(event)
+    const mousePosition = super.getPos(event)
     switch (this.currentTool) {
       case TOOLS.FREE_DRAW: {
-        const freehandDrawingShape = new FreeHandShape({ 
+        const freehandDrawingShape = new FreeHandShape(this.canvas, { 
           strokeStyle: "black", 
           lineWidth: 7, 
           lineCap: 'round'
         })
-        freehandDrawingShape.startDrawing(this.canvas, mousePosition)
+        freehandDrawingShape.startDrawing(mousePosition)
         this.state.addShape(freehandDrawingShape)
+        this.isDrawing = true
         break;
       }
       case TOOLS.MOVE_SHAPE: {
+        this.isSelecting = true
+
+        this.selectionBox.setStartX(mousePosition.x)
+        this.selectionBox.setStartY(mousePosition.y)
+
         for (const shape of this.state.getShapes()) {
           if (shape.contains(mousePosition.x, mousePosition.y)) {
-            this.selectedShape = shape 
+            this.selectedShape = shape
             this.dragOffsetX = mousePosition.x - shape.x
             this.dragOffsetY = mousePosition.y - shape.y 
             this.isDragging = true
+            this.isSelecting = false
           }
         }
         break;
@@ -121,57 +141,52 @@ export class Canvas {
   }
 
   handleMouseMove(event) {
-    if (!this.isDragging) return
-
-    const mousePosition = this.getPos(event)
-    const mx = mousePosition.x
-    const my = mousePosition.y
-    
-    this.selectedShape.x = mx - this.dragOffsetX
-    this.selectedShape.y = my - this.dragOffsetY
-    this.shouldRedraw = true
+    if (this.isDrawing) return
+    const mousePosition = super.getPos(event)
+    if (this.isDragging) {
+      const mx = mousePosition.x
+      const my = mousePosition.y
+      this.selectedShape.x = mx - this.dragOffsetX
+      this.selectedShape.y = my - this.dragOffsetY
+      this.draw()
+    } else if (this.isSelecting) {
+      this.draw()
+      this.selectionBox.draw(mousePosition.x, mousePosition.y)
+    }
   }
 
   handleMouseUp() {
-    this.isDragging = false
+    if (this.isSelecting) this.draw()
     this.isDrawing = false
+    this.isDragging = false
+    this.isSelecting = false
   }
   
   add(shape) {
     this.state.addShape(shape)
-    this.shouldRedraw = true
+    this.draw()
   }
   
   draw() {
-    if (!this.shouldRedraw) {
-      return
-    }
-
     this.clear()
-
   	for (const shape of this.state.getShapes()) {
     	shape.draw(this.ctx)
     }
-
-    this.shouldRedraw = false
   }
 
   clear() {
     this.ctx.clearRect(0, 0, this.width, this.height)
-  }
-  
-  getPos(event) {
-  	return {
-    	x: event.clientX - canvasOffsetX,
-      y: event.clientY - canvasOffsetY    
-    }
-  }
+  }  
 }
 
-class FreeHandShape {
-  constructor(style) {
+class FreeHandShape extends MainEventHandler {
+  constructor(canvas, style) {
+    super(canvas)
+
+    this.ctx = canvas.getContext('2d')
     this.x = 0
     this.y = 0
+
     this.w = this.maxX - this.minX
     this.h = this.maxY - this.minY
     this.points = []
@@ -184,47 +199,33 @@ class FreeHandShape {
     this.style = style
   }
 
-  startDrawing(canvas, startPosition) {
-    const ctx = canvas.getContext('2d')
-
-    Object.assign(ctx, this.style)
+  startDrawing(startPosition) {
+    Object.assign(this.ctx, this.style)
 
     this.x = startPosition.x
     this.y = startPosition.y 
+
     this.points.push({x: startPosition.x,  y: startPosition.y})
 
-    ctx.beginPath()
-    ctx.moveTo(startPosition.x, startPosition.y)
-
-    const originalMouseMove = canvas.onmousemove
-    const originalMouseUp = canvas.onmouseup
-    canvas.onmousemove = (event) => {
-    	const mousePosition = {
-        x: event.clientX - canvasOffsetX,
-        y: event.clientY - canvasOffsetY
-      }
-
-      this.points.push({x: mousePosition.x, y: mousePosition.y})
-
-      ctx.lineTo(mousePosition.x, mousePosition.y)
-      ctx.stroke()
-      this.calculateBoundingBox()
-    }
-
-    canvas.onmouseup = () => {
-    	// draw the bounding box
-      ctx.strokeStyle = "red"
-      ctx.lineWidth = 2
-      ctx.setLineDash([2, 4])
-      ctx.strokeRect(this.minX, this.minY, this.w, this.h)      
-
-      canvas.onmousemove = originalMouseMove
-      canvas.onmouseup = originalMouseUp
-    }
+    this.ctx.beginPath()
+    this.ctx.moveTo(startPosition.x, startPosition.y)
   }
 
-  draw(ctx) {
-    Object.assign(ctx, this.style)
+  handleMouseMove(event) {
+    const mousePosition = super.getPos(event)
+    this.points.push({x: mousePosition.x, y: mousePosition.y})
+    this.ctx.lineTo(mousePosition.x, mousePosition.y)
+    this.ctx.stroke()
+  }
+
+  handleMouseUp() {
+    this.ctx.closePath()
+    this.calculateBoundingBox()
+    super.cleanUpEvents()
+  } 
+
+  draw() {
+    Object.assign(this.ctx, this.style)
 
  		const dx = this.x - this.points[0].x;
     const dy = this.y - this.points[0].y;
@@ -234,21 +235,17 @@ class FreeHandShape {
       this.points[i].y += dy
     }
     
-    ctx.beginPath()
-    ctx.moveTo(this.points[0].x , this.points[0].y)
+    this.ctx.beginPath()
+    this.ctx.moveTo(this.points[0].x , this.points[0].y)
  
     for (let i = 1; i < this.points.length; i++) {
-    	ctx.lineTo(this.points[i].x, this.points[i].y)
+    	this.ctx.lineTo(this.points[i].x, this.points[i].y)
     }
 
-    ctx.stroke()
-    ctx.closePath()
+    this.ctx.stroke()
+    this.ctx.closePath()
 
     this.calculateBoundingBox()
-    ctx.strokeStyle = "red"
-    ctx.lineWidth = 2
-    ctx.setLineDash([2, 4])
-    ctx.strokeRect(this.minX, this.minY, this.w, this.h)
   }
 
   contains(mx, my) {
@@ -277,5 +274,12 @@ class FreeHandShape {
     this.maxX = maxX
     this.minY = minY
     this.maxY = maxY
-  }  
+  }
+
+  drawBoundingBox() {
+    this.ctx.strokeStyle = "red"
+    this.ctx.lineWidth = 2
+    this.ctx.setLineDash([2, 4])
+    this.ctx.strokeRect(this.minX, this.minY, this.w, this.h)
+  }
 }
