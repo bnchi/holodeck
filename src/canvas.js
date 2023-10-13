@@ -60,6 +60,7 @@ export class SelectionBox {
 
     this.ctx.beginPath()
     this.ctx.rect(this.startX, this.startY, width, height)
+    this.ctx.setLineDash([2, 4])
     this.ctx.strokeStyle = "black"
     this.ctx.lineWidth = 2
     this.ctx.stroke()
@@ -83,6 +84,8 @@ export class Canvas extends MainEventHandler {
 
     this.state = state
     this.selectedShape = null
+
+    this.selectedShapes = []
 
     this.selectionBox = selectionBox
 
@@ -125,7 +128,8 @@ export class Canvas extends MainEventHandler {
 
         for (const shape of this.state.getShapes()) {
           if (shape.contains(mousePosition.x, mousePosition.y)) {
-            this.selectedShape = shape
+            this.selectedShapes = []
+            this.selectedShapes.push(shape)
             this.dragOffsetX = mousePosition.x - shape.x
             this.dragOffsetY = mousePosition.y - shape.y 
             this.isDragging = true
@@ -146,8 +150,12 @@ export class Canvas extends MainEventHandler {
     if (this.isDragging) {
       const mx = mousePosition.x
       const my = mousePosition.y
-      this.selectedShape.x = mx - this.dragOffsetX
-      this.selectedShape.y = my - this.dragOffsetY
+
+      for (const selectedShape of this.selectedShapes) {
+        selectedShape.x = mx - this.dragOffsetX
+        selectedShape.y = my - this.dragOffsetY
+      }
+
       this.draw()
     } else if (this.isSelecting) {
       this.draw()
@@ -164,13 +172,17 @@ export class Canvas extends MainEventHandler {
   
   add(shape) {
     this.state.addShape(shape)
-    this.draw()
   }
   
   draw() {
     this.clear()
+    
   	for (const shape of this.state.getShapes()) {
     	shape.draw(this.ctx)
+    }
+
+    for (const selectedShape of this.selectedShapes) {
+      selectedShape.drawBoundingBox()
     }
   }
 
