@@ -1,6 +1,7 @@
 export default class MainEventHandler {
   constructor(canvas) {
     this.canvas = canvas
+    this.ctx = canvas.getContext('2d')
 
     this.mouseDown = this.handleMouseDown.bind(this)
     this.mouseMove = this.handleMouseMove.bind(this)

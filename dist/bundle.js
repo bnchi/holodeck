@@ -55203,6 +55203,7 @@
 	class MainEventHandler {
 	  constructor(canvas) {
 	    this.canvas = canvas;
+	    this.ctx = canvas.getContext('2d');
 
 	    this.mouseDown = this.handleMouseDown.bind(this);
 	    this.mouseMove = this.handleMouseMove.bind(this);
@@ -55241,200 +55242,10 @@
 	  }
 	}
 
-	const TOOLS = {
-	  MOVE_SHAPE: 'move_shape',
-	  FREE_DRAW: 'free_draw'
-	};
-
-	class State {
-	  constructor() {
-	    this.shapes = [];
-	  }
-
-	  addShape(shape) {
-	    this.shapes.push(shape);
-	  }
-
-	  getShapes() {
-	    return this.shapes
-	  }
-	}
-
-	class SelectionBox {
-	  constructor(canvas) { 
-	    this.ctx = canvas.getContext('2d');
-	    this.startX = 0;
-	    this.startY = 0;
-	  }
-
-	  setStartX(x) {
-	    this.startX = x;
-	  }
-
-	  setStartY(y) {
-	    this.startY = y;
-	  } 
-
-	  draw(x, y) {
-	    this.width = x - this.startX;
-	    this.height = y - this.startY;
-
-	    this.ctx.beginPath();
-	    this.ctx.rect(this.startX, this.startY, this.width, this.height);
-	    this.ctx.setLineDash([2, 4]);
-	    this.ctx.strokeStyle = "black";
-	    this.ctx.lineWidth = 2;
-	    this.ctx.stroke();
-	  }
-
-	  isOverlapping(shape) {
-	    return (
-	      this.rangeIntersect(this.startX, this.startX + this.width,shape.x, shape.x + shape.w) 
-	      && this.rangeIntersect(this.startY, this.startY + this.height, shape.y, shape.y + shape.h)
-	    );
-	  }
-
-	  rangeIntersect(min0, max0, min1, max1) {
-	    return Math.max(min0, max0) >= Math.min(min1, max1) &&
-	           Math.min(min0, max0) <= Math.max(min1, max1)
-	  }
-	}
-
-	class Canvas extends MainEventHandler {
-	  constructor(canvas, state, selectionBox) {
-	    super(canvas);
-
-	    if (!state) {
-	      throw new Error("Must provide shapes state")
-	    }
-
-	    this.ctx = canvas.getContext('2d');
-
-	    this.width = canvas.width;
-	    this.height = canvas.height;
-	    
-	    this.currentTool = TOOLS.FREE_DRAW;
-
-	    this.state = state;
-	    this.selectedShape = null;
-
-	    this.selectedShapes = [];
-
-	    this.selectionBox = selectionBox;
-
-	    this.isDragging = false;
-	    this.isDrawing = false;
-	    this.isSelecting = false;
-
-	    this.dragOffsetX = 0;
-	    this.dragOffsetY = 0;
-	  }
-
-	  setNewState(state) {
-	    this.state = state;
-	    this.draw();
-	  }
-
-	  setCurrentTool(tool) {
-	    this.currentTool = tool;
-	  }
-	   
-	  handleMouseDown(event) {
-	    const mousePosition = super.getPos(event);
-
-	    switch (this.currentTool) {
-	      case TOOLS.FREE_DRAW: {
-	        const freehandDrawingShape = new FreeHandShape(this.canvas, { 
-	          strokeStyle: "black", 
-	          lineWidth: 7, 
-	          lineCap: 'round'
-	        });
-	        freehandDrawingShape.startDrawing(mousePosition);
-	        this.state.addShape(freehandDrawingShape);
-	        this.isDrawing = true;
-	        break;
-	      }
-	      case TOOLS.MOVE_SHAPE: {
-	        this.isSelecting = true;
-	        this.selectionBox.setStartX(mousePosition.x);
-	        this.selectionBox.setStartY(mousePosition.y);
-	        for (const shape of this.state.getShapes()) {
-	          if (shape.contains(mousePosition.x, mousePosition.y)) {
-	            if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape); 
-	            this.selectedShape = shape;
-	            this.selectedShape.drawBoundingBox();
-
-	            this.dragOffsetX = mousePosition.x - shape.x;
-	            this.dragOffsetY = mousePosition.y - shape.y;
-	            this.isDragging = true;
-	            this.isSelecting = false;
-	          }
-	        }
-	        break;
-	      }
-	      default: {
-	        throw new Error("Not implemented")
-	      }
-	    }
-	  }
-
-	  handleMouseMove(event) {
-	    if (this.isDrawing) return
-	    const mousePosition = super.getPos(event);
-	    if (this.isDragging) {
-	      const mx = mousePosition.x - this.dragOffsetX;
-	      const my = mousePosition.y - this.dragOffsetY;
-	      const dx = mx - this.selectedShape.x;
-	      const dy = my - this.selectedShape.y;
-	      for (const selectedShape of this.selectedShapes) {
-	        selectedShape.x += dx; 
-	        selectedShape.y += dy; 
-	      }
-	      this.draw();
-	    } else if (this.isSelecting) {
-	      this.draw();
-	      this.selectionBox.draw(mousePosition.x, mousePosition.y);
-	    }
-	  }
-
-	  handleMouseUp() {
-	    if (this.isSelecting) this.draw();
-	    this.isDrawing = false;
-	    this.isDragging = false;
-	    this.isSelecting = false;
-	  }
-	  
-	  add(shape) {
-	    this.state.addShape(shape);
-	  }
-	  
-	  draw() {
-	    this.clear();
-	    
-	  	for (const shape of this.state.getShapes()) {
-	    	shape.draw(this.ctx);
-
-	      const isShapeSelected = this.selectedShapes.includes(shape);
-	      if (isShapeSelected) {
-	        shape.drawBoundingBox();
-	      }
-
-	      if (this.selectionBox.isOverlapping(shape) && !isShapeSelected) {
-	        this.selectedShapes.push(shape);
-	      }
-	    }
-	  }
-
-	  clear() {
-	    this.ctx.clearRect(0, 0, this.width, this.height);
-	  }  
-	}
-
 	class FreeHandShape extends MainEventHandler {
 	  constructor(canvas, style) {
 	    super(canvas);
 
-	    this.ctx = canvas.getContext('2d');
 	    this.x = 0;
 	    this.y = 0;
 
@@ -55495,7 +55306,6 @@
 
 	    this.ctx.stroke();
 	    this.ctx.closePath();
-
 	    this.calculateBoundingBox();
 	  }
 
@@ -55518,8 +55328,8 @@
 	      if (y > maxY) maxY = y;
 	    }
 
-	    this.w = maxX - minX;
-	    this.h = maxY - minY;
+	    this.w = maxX - minX + 7;
+	    this.h = maxY - minY + 7;
 
 	    this.minX = minX;
 	    this.maxX = maxX;
@@ -55532,6 +55342,177 @@
 	    this.ctx.lineWidth = 2;
 	    this.ctx.setLineDash([2, 4]);
 	    this.ctx.strokeRect(this.minX, this.minY, this.w, this.h);
+	  }
+	}
+
+	const TOOLS = {
+	  SELECTION: 'selection',
+	  FREE_DRAW: 'free_draw'
+	};
+
+	class State {
+	  constructor() {
+	    this.shapes = [];
+	  }
+
+	  addShape(shape) {
+	    this.shapes.push(shape);
+	  }
+
+	  getShapes() {
+	    return this.shapes
+	  }
+	}
+
+	class Canvas extends MainEventHandler {
+	  constructor(canvas, state, selectionBox) {
+	    super(canvas);
+
+	    this.width = canvas.width;
+	    this.height = canvas.height;    
+
+	    this.currentTool = TOOLS.FREE_DRAW;
+	    this.state = state;
+	    this.selectedShape = null;
+	    this.selectedShapes = [];
+
+	    this.selectionBox = selectionBox;
+
+	    this.isDragging = false;
+	    this.isDrawing = false;
+	    this.isSelecting = false;
+
+	    this.dragOffsetX = 0;
+	    this.dragOffsetY = 0;
+	  }
+
+	  setNewState(state) {
+	    this.state = state;
+	    this.draw();
+	  }
+
+	  setCurrentTool(tool) {
+	    this.currentTool = tool;
+	  }
+	   
+	  handleMouseDown(event) {
+	    const mousePosition = super.getPos(event);
+	    const commonStyles = { 
+	      strokeStyle: "black", 
+	      lineWidth: 7, 
+	      lineCap: 'round'
+	    };
+	    this.isDrawing = true;
+	    switch (this.currentTool) {
+	      case TOOLS.FREE_DRAW:
+	        const shape = new FreeHandShape(this.canvas, commonStyles);
+	        shape.startDrawing(mousePosition);
+	        this.state.addShape(shape);
+	        break
+	      default:
+	        this.isDrawing = false;
+	        this.isSelecting = true;
+	        this.startSelection(mousePosition);
+	    }
+	  }
+
+	  handleMouseMove(event) {
+	    if (this.isDrawing) return
+	    const mousePosition = super.getPos(event);
+	    if (this.isDragging) {
+	      const mx = mousePosition.x - this.dragOffsetX;
+	      const my = mousePosition.y - this.dragOffsetY;
+	      const dx = mx - this.selectedShape.x;
+	      const dy = my - this.selectedShape.y;
+	      for (const selectedShape of this.selectedShapes) {
+	        selectedShape.x += dx; 
+	        selectedShape.y += dy; 
+	      }
+	      this.draw();
+	    } else if (this.isSelecting) {
+	      this.draw();
+	      this.selectionBox.draw(mousePosition.x, mousePosition.y);
+	    }
+	  }
+
+	  handleMouseUp() {
+	    if (this.isSelecting) this.draw();
+	    this.isDrawing = false;
+	    this.isDragging = false;
+	    this.isSelecting = false;
+	  }
+	  
+	  startSelection(mousePosition) {
+	    this.selectionBox.setPoint(mousePosition.x, mousePosition.y);
+	    for (const shape of this.state.getShapes()) {
+	      if (shape.contains(mousePosition.x, mousePosition.y)) {
+	        if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape); 
+	        this.selectedShape = shape;
+	        this.selectedShape.drawBoundingBox();
+
+	        this.dragOffsetX = mousePosition.x - shape.x;
+	        this.dragOffsetY = mousePosition.y - shape.y;
+	        this.isDragging = true;
+	        this.isSelecting = false;
+	      }
+	    }
+	  }
+	  
+	  draw() {
+	    this.clear();
+	    
+	  	for (const shape of this.state.getShapes()) {
+	    	shape.draw(this.ctx);
+
+	      const isShapeSelected = this.selectedShapes.includes(shape);
+	      if (isShapeSelected) {
+	        shape.drawBoundingBox();
+	      }
+
+	      if (this.selectionBox.isOverlapping(shape) && !isShapeSelected) {
+	        this.selectedShapes.push(shape);
+	      }
+	    }
+	  }
+
+	  clear() {
+	    this.ctx.clearRect(0, 0, this.width, this.height);
+	  }  
+	}
+
+	class SelectionBox {
+	  constructor(canvas) { 
+	    this.ctx = canvas.getContext('2d');
+	    this.startX = 0;
+	    this.startY = 0;
+	  }
+
+	  setPoint(x, y) {
+	    this.startX = x;
+	    this.startY = y;
+	  }
+
+	  draw(x, y) {
+	    this.width = x - this.startX;
+	    this.height = y - this.startY;
+	    this.ctx.beginPath();
+	    this.ctx.rect(this.startX, this.startY, this.width, this.height);
+	    this.ctx.setLineDash([2, 4]);
+	    this.ctx.strokeStyle = "black";
+	    this.ctx.lineWidth = 2;
+	    this.ctx.stroke();
+	  }
+
+	  isOverlapping(shape) {
+	    return (
+	      this.rangeIntersect(this.startX, this.startX + this.width,shape.x, shape.x + shape.w) 
+	      && this.rangeIntersect(this.startY, this.startY + this.height, shape.y, shape.y + shape.h)
+	    );
+	  }
+
+	  rangeIntersect(min0, max0, min1, max1) {
+	    return Math.max(min0, max0) >= Math.min(min1, max1) &&
+	           Math.min(min0, max0) <= Math.max(min1, max1)
 	  }
 	}
 

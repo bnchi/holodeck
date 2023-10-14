@@ -1,5 +1,7 @@
 import { PDFDrawer } from '../pdf'
-import { Canvas, State, SelectionBox, TOOLS } from './canvas'
+
+import Canvas, { State, TOOLS } from './MainCanvas'
+import SelectionBox from './SelectionBox'
 
 async function main() {
   const pdfCanvas = document.getElementById('pdfCanvas')
