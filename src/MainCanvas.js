@@ -92,7 +92,7 @@ export default class Canvas extends MainEventHandler {
   }
 
   handleMouseUp() {
-    if (this.isSelecting) this.draw()
+    if (this.isSelecting) this.draw() // clear out the canvas from selection box
     this.isDrawing = false
     this.isDragging = false
     this.isSelecting = false
@@ -105,7 +105,6 @@ export default class Canvas extends MainEventHandler {
         if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape) 
         this.selectedShape = shape
         this.selectedShape.drawBoundingBox()
-
         this.dragOffsetX = mousePosition.x - shape.x
         this.dragOffsetY = mousePosition.y - shape.y
         this.isDragging = true

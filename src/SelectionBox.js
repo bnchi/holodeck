@@ -23,8 +23,8 @@ export default class SelectionBox {
 
   isOverlapping(shape) {
     return (
-      this.rangeIntersect(this.startX, this.startX + this.width,shape.x, shape.x + shape.w) 
-      && this.rangeIntersect(this.startY, this.startY + this.height, shape.y, shape.y + shape.h)
+      this.rangeIntersect(this.startX, this.startX + this.width, shape.minX, shape.maxX) 
+      && this.rangeIntersect(this.startY, this.startY + this.height, shape.minY, shape.maxY)
     );
   }
 

@@ -55436,7 +55436,7 @@
 	  }
 
 	  handleMouseUp() {
-	    if (this.isSelecting) this.draw();
+	    if (this.isSelecting) this.draw(); // clear out the canvas from selection box
 	    this.isDrawing = false;
 	    this.isDragging = false;
 	    this.isSelecting = false;
@@ -55449,7 +55449,6 @@
 	        if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape); 
 	        this.selectedShape = shape;
 	        this.selectedShape.drawBoundingBox();
-
 	        this.dragOffsetX = mousePosition.x - shape.x;
 	        this.dragOffsetY = mousePosition.y - shape.y;
 	        this.isDragging = true;
@@ -55505,8 +55504,8 @@
 
 	  isOverlapping(shape) {
 	    return (
-	      this.rangeIntersect(this.startX, this.startX + this.width,shape.x, shape.x + shape.w) 
-	      && this.rangeIntersect(this.startY, this.startY + this.height, shape.y, shape.y + shape.h)
+	      this.rangeIntersect(this.startX, this.startX + this.width, shape.minX, shape.maxX) 
+	      && this.rangeIntersect(this.startY, this.startY + this.height, shape.minY, shape.maxY)
 	    );
 	  }
 
