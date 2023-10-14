@@ -55,15 +55,27 @@ export class SelectionBox {
   } 
 
   draw(x, y) {
-    const width = x - this.startX
-    const height = y - this.startY
+    this.width = x - this.startX
+    this.height = y - this.startY
 
     this.ctx.beginPath()
-    this.ctx.rect(this.startX, this.startY, width, height)
+    this.ctx.rect(this.startX, this.startY, this.width, this.height)
     this.ctx.setLineDash([2, 4])
     this.ctx.strokeStyle = "black"
     this.ctx.lineWidth = 2
     this.ctx.stroke()
+  }
+
+  isOverlapping(shape) {
+    return (
+      this.rangeIntersect(this.startX, this.startX + this.width,shape.x, shape.x + shape.w) 
+      && this.rangeIntersect(this.startY, this.startY + this.height, shape.y, shape.y + shape.h)
+    );
+  }
+
+  rangeIntersect(min0, max0, min1, max1) {
+    return Math.max(min0, max0) >= Math.min(min1, max1) &&
+           Math.min(min0, max0) <= Math.max(min1, max1)
   }
 }
 
@@ -108,6 +120,7 @@ export class Canvas extends MainEventHandler {
    
   handleMouseDown(event) {
     const mousePosition = super.getPos(event)
+
     switch (this.currentTool) {
       case TOOLS.FREE_DRAW: {
         const freehandDrawingShape = new FreeHandShape(this.canvas, { 
@@ -122,16 +135,16 @@ export class Canvas extends MainEventHandler {
       }
       case TOOLS.MOVE_SHAPE: {
         this.isSelecting = true
-
         this.selectionBox.setStartX(mousePosition.x)
         this.selectionBox.setStartY(mousePosition.y)
-
         for (const shape of this.state.getShapes()) {
           if (shape.contains(mousePosition.x, mousePosition.y)) {
-            this.selectedShapes = []
-            this.selectedShapes.push(shape)
+            if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape) 
+            this.selectedShape = shape
+            this.selectedShape.drawBoundingBox()
+
             this.dragOffsetX = mousePosition.x - shape.x
-            this.dragOffsetY = mousePosition.y - shape.y 
+            this.dragOffsetY = mousePosition.y - shape.y
             this.isDragging = true
             this.isSelecting = false
           }
@@ -148,14 +161,14 @@ export class Canvas extends MainEventHandler {
     if (this.isDrawing) return
     const mousePosition = super.getPos(event)
     if (this.isDragging) {
-      const mx = mousePosition.x
-      const my = mousePosition.y
-
+      const mx = mousePosition.x - this.dragOffsetX
+      const my = mousePosition.y - this.dragOffsetY
+      const dx = mx - this.selectedShape.x
+      const dy = my - this.selectedShape.y
       for (const selectedShape of this.selectedShapes) {
-        selectedShape.x = mx - this.dragOffsetX
-        selectedShape.y = my - this.dragOffsetY
+        selectedShape.x += dx 
+        selectedShape.y += dy 
       }
-
       this.draw()
     } else if (this.isSelecting) {
       this.draw()
@@ -179,10 +192,15 @@ export class Canvas extends MainEventHandler {
     
   	for (const shape of this.state.getShapes()) {
     	shape.draw(this.ctx)
-    }
 
-    for (const selectedShape of this.selectedShapes) {
-      selectedShape.drawBoundingBox()
+      const isShapeSelected = this.selectedShapes.includes(shape)
+      if (isShapeSelected) {
+        shape.drawBoundingBox()
+      }
+
+      if (this.selectionBox.isOverlapping(shape) && !isShapeSelected) {
+        this.selectedShapes.push(shape)
+      }
     }
   }
 
