@@ -55313,7 +55313,7 @@
 	    return (mx >= this.minX) && (mx <= this.maxX) 
 	      && (my >= this.minY) && (my <= this.maxY);
 	  }
-	   
+
 	  calculateBoundingBox() {
 	    let minX = this.points[0].x;
 	    let minY = this.points[0].y;
@@ -55345,14 +55345,47 @@
 	  }
 	}
 
+	const CANVAS_EVENT = {
+	  DRAWING: 'drawing',
+	  SELECTION: 'selection'
+	};
+
 	const TOOLS = {
 	  SELECTION: 'selection',
-	  FREE_DRAW: 'free_draw'
+	  FREE_DRAW: 'free_draw',
+	  SELECT_ALL: 'select_all',
+	  DESELECT_ALL: 'deselect_all',
+	  DELETE_SELECTED: 'delete_selected'
 	};
+
+
+	class ToolInvoker {
+	  constructor(canvas) {
+	    this.canvas = canvas;
+	  }
+
+	  invoke(tool) {
+	    switch (tool) {
+	      case TOOLS.SELECTION:
+	        return this.canvas.setActiveTool(CANVAS_EVENT.SELECTION)
+	      case TOOLS.FREE_DRAW:
+	        return this.canvas.setActiveTool(CANVAS_EVENT.DRAWING)
+	      case TOOLS.SELECT_ALL:
+	        return this.canvas.selectAll()
+	      case TOOLS.DESELECT_ALL:
+	        return this.canvas.deselectAll() 
+	      case TOOLS.DELETE_SELECTED:
+	        return this.canvas.deleteSelected()
+	      default:
+	        throw new Error('Not there')
+	    }
+	  }
+	}
 
 	class State {
 	  constructor() {
 	    this.shapes = [];
+	    this.selectedShapes = [];
 	  }
 
 	  addShape(shape) {
@@ -55362,19 +55395,44 @@
 	  getShapes() {
 	    return this.shapes
 	  }
+
+	  getShapeAt(i) {
+	    return this.shapes[i]
+	  }
+
+	  deleteShapeAt(i) {
+	    this.shapes.splice(i, 1);
+	  }
+
+	  addSelectedShapeIfNotExist(shape) {
+	    if (!this.isShapeSelected(shape)) {
+	      this.selectedShapes.push(shape); 
+	    }
+	  }
+
+	  getSelectedShapes() {
+	    return this.selectedShapes 
+	  }
+
+	  isShapeSelected(shape) {
+	    return this.selectedShapes.includes(shape)
+	  }
+
+	  emptySelectedShapes() {
+	    this.selectedShapes = [];
+	  }
 	}
 
 	class Canvas extends MainEventHandler {
 	  constructor(canvas, state, selectionBox) {
 	    super(canvas);
 
+	    this.activeTool = CANVAS_EVENT.SELECTION;
 	    this.width = canvas.width;
 	    this.height = canvas.height;    
 
-	    this.currentTool = TOOLS.FREE_DRAW;
 	    this.state = state;
 	    this.selectedShape = null;
-	    this.selectedShapes = [];
 
 	    this.selectionBox = selectionBox;
 
@@ -55384,6 +55442,7 @@
 
 	    this.dragOffsetX = 0;
 	    this.dragOffsetY = 0;
+	    
 	  }
 
 	  setNewState(state) {
@@ -55391,40 +55450,59 @@
 	    this.draw();
 	  }
 
-	  setCurrentTool(tool) {
-	    this.currentTool = tool;
+	  setActiveTool(tool) {
+	    this.activeTool = tool;
 	  }
 	   
 	  handleMouseDown(event) {
 	    const mousePosition = super.getPos(event);
-	    const commonStyles = { 
-	      strokeStyle: "black", 
-	      lineWidth: 7, 
-	      lineCap: 'round'
-	    };
-	    this.isDrawing = true;
-	    switch (this.currentTool) {
-	      case TOOLS.FREE_DRAW:
-	        const shape = new FreeHandShape(this.canvas, commonStyles);
+	    switch (this.activeTool) {
+	      case CANVAS_EVENT.DRAWING:
+	        this.isDrawing = true;
+	        const shape = new FreeHandShape(this.canvas, this.getStyles());
 	        shape.startDrawing(mousePosition);
 	        this.state.addShape(shape);
 	        break
-	      default:
-	        this.isDrawing = false;
+	      case CANVAS_EVENT.SELECTION:
 	        this.isSelecting = true;
+	        this.isDrawing = false;
+	        this.isDragging = false;
+	        this.selectionBox.setPoint(mousePosition.x, mousePosition.y);
 	        this.startSelection(mousePosition);
+	        break
+	      default:
+	        throw new Error('not implemented')
+	    }
+	  }
+
+	  startSelection(mousePosition) {
+	    for (const shape of this.state.getShapes()) {
+	      if (shape.contains(mousePosition.x, mousePosition.y)) {
+	        this.isSelecting = false;
+	        this.isDragging = true;
+	        this.isDrawing = false;
+
+	        this.state.addSelectedShapeIfNotExist(shape);
+
+	        this.selectedShape = shape;
+	        this.dragOffsetX = mousePosition.x - shape.x;
+	        this.dragOffsetY = mousePosition.y - shape.y;
+
+	        this.draw();
+	      } 
 	    }
 	  }
 
 	  handleMouseMove(event) {
 	    if (this.isDrawing) return
+
 	    const mousePosition = super.getPos(event);
 	    if (this.isDragging) {
 	      const mx = mousePosition.x - this.dragOffsetX;
 	      const my = mousePosition.y - this.dragOffsetY;
 	      const dx = mx - this.selectedShape.x;
 	      const dy = my - this.selectedShape.y;
-	      for (const selectedShape of this.selectedShapes) {
+	      for (const selectedShape of this.state.getSelectedShapes()) {
 	        selectedShape.x += dx; 
 	        selectedShape.y += dy; 
 	      }
@@ -55432,6 +55510,11 @@
 	    } else if (this.isSelecting) {
 	      this.draw();
 	      this.selectionBox.draw(mousePosition.x, mousePosition.y);
+	      for (const shape of this.state.getShapes()) {
+	        if (this.selectionBox.isOverlapping(shape)) {
+	          this.state.addSelectedShapeIfNotExist(shape);
+	        }
+	      }
 	    }
 	  }
 
@@ -55441,35 +55524,55 @@
 	    this.isDragging = false;
 	    this.isSelecting = false;
 	  }
-	  
-	  startSelection(mousePosition) {
-	    this.selectionBox.setPoint(mousePosition.x, mousePosition.y);
-	    for (const shape of this.state.getShapes()) {
-	      if (shape.contains(mousePosition.x, mousePosition.y)) {
-	        if (!this.selectedShapes.includes(shape)) this.selectedShapes.push(shape); 
-	        this.selectedShape = shape;
-	        this.selectedShape.drawBoundingBox();
-	        this.dragOffsetX = mousePosition.x - shape.x;
-	        this.dragOffsetY = mousePosition.y - shape.y;
-	        this.isDragging = true;
-	        this.isSelecting = false;
-	      }
+
+	  getStyles() {
+	    return {
+	      strokeStyle: "black", 
+	      lineWidth: 7, 
+	      lineCap: 'round'
 	    }
 	  }
-	  
+
+	  selectAll() {
+	    this.state.emptySelectedShapes();
+
+	    for (const shape of this.state.getShapes()) {
+	      this.state.addSelectedShapeIfNotExist(shape);
+	    }
+
+	    this.draw();
+	  }
+
+	  deselectAll() {
+	    this.state.emptySelectedShapes();
+	    this.draw();
+	  }
+
+	  deleteSelected() {
+	    const selectedShapes = this.state.getSelectedShapes();
+
+	    for (let i = 0; i < selectedShapes.length; i++) {
+	      for (let j = 0; j < this.state.getShapes().length; j++) {
+	        const shape = this.state.getShapeAt(j);
+	        if (this.state.selectedShapes[i] == shape) {
+	          this.state.deleteShapeAt(j);
+	          continue
+	        }
+	      }
+	    }
+
+	    this.state.emptySelectedShapes();
+	    this.draw();
+	  }
+
 	  draw() {
 	    this.clear();
 	    
 	  	for (const shape of this.state.getShapes()) {
 	    	shape.draw(this.ctx);
 
-	      const isShapeSelected = this.selectedShapes.includes(shape);
-	      if (isShapeSelected) {
+	      if (this.state.isShapeSelected(shape)) {
 	        shape.drawBoundingBox();
-	      }
-
-	      if (this.selectionBox.isOverlapping(shape) && !isShapeSelected) {
-	        this.selectedShapes.push(shape);
 	      }
 	    }
 	  }
@@ -55534,6 +55637,7 @@
 	  ];
 
 	  const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas));
+	  const toolInvoker = new ToolInvoker(canvas);
 
 	  for (const child of pdfPagesElem.childNodes) {
 	    child.addEventListener('click', async (event) => {
@@ -55548,18 +55652,14 @@
 	    pdfObj.saveToDevice(pagesState);
 	  });
 
-	  const keys = Object.keys(TOOLS);
-
 	  const fragment = new DocumentFragment();
-
-	  for (const toolKey of keys) {
+	  for (const toolKey of Object.keys(TOOLS)) {
 	    const button = document.createElement("button");
 	    button.textContent = toolKey;
-	    button.addEventListener('click', () => canvas.setCurrentTool(TOOLS[toolKey])); 
+	    button.addEventListener('click', () => toolInvoker.invoke(TOOLS[toolKey])); 
 	    button.setAttribute(toolKey, TOOLS[toolKey]);
 	    fragment.append(button);
 	  }
-
 	  tools.append(fragment);
 	}
 

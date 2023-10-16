@@ -1,6 +1,6 @@
 import { PDFDrawer } from '../pdf'
-
-import Canvas, { State, TOOLS } from './MainCanvas'
+import Canvas, { State } from './MainCanvas'
+import ToolInvoker, { TOOLS } from './Tools'
 import SelectionBox from './SelectionBox'
 
 async function main() {
@@ -22,6 +22,7 @@ async function main() {
   ]
 
   const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas))
+  const toolInvoker = new ToolInvoker(canvas)
 
   for (const child of pdfPagesElem.childNodes) {
     child.addEventListener('click', async (event) => {
@@ -36,18 +37,14 @@ async function main() {
     pdfObj.saveToDevice(pagesState)
   })
 
-  const keys = Object.keys(TOOLS)
-
   const fragment = new DocumentFragment()
-
-  for (const toolKey of keys) {
+  for (const toolKey of Object.keys(TOOLS)) {
     const button = document.createElement("button")
     button.textContent = toolKey
-    button.addEventListener('click', () => canvas.setCurrentTool(TOOLS[toolKey])) 
+    button.addEventListener('click', () => toolInvoker.invoke(TOOLS[toolKey])) 
     button.setAttribute(toolKey, TOOLS[toolKey])
     fragment.append(button)
   }
-
   tools.append(fragment)
 }
 

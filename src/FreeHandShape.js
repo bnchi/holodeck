@@ -71,7 +71,7 @@ export default class FreeHandShape extends MainEventHandler {
     return (mx >= this.minX) && (mx <= this.maxX) 
       && (my >= this.minY) && (my <= this.maxY);
   }
-   
+
   calculateBoundingBox() {
     let minX = this.points[0].x
     let minY = this.points[0].y
