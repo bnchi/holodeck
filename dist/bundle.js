@@ -55355,7 +55355,8 @@
 	  FREE_DRAW: 'free_draw',
 	  SELECT_ALL: 'select_all',
 	  DESELECT_ALL: 'deselect_all',
-	  DELETE_SELECTED: 'delete_selected'
+	  DELETE_SELECTED: 'delete_selected',
+	  DELETE_ALL: 'delete_all'
 	};
 
 
@@ -55376,50 +55377,11 @@
 	        return this.canvas.deselectAll() 
 	      case TOOLS.DELETE_SELECTED:
 	        return this.canvas.deleteSelected()
+	      case TOOLS.DELETE_ALL:
+	        return this.canvas.deleteAll()
 	      default:
 	        throw new Error('Not there')
 	    }
-	  }
-	}
-
-	class State {
-	  constructor() {
-	    this.shapes = [];
-	    this.selectedShapes = [];
-	  }
-
-	  addShape(shape) {
-	    this.shapes.push(shape);
-	  }
-
-	  getShapes() {
-	    return this.shapes
-	  }
-
-	  getShapeAt(i) {
-	    return this.shapes[i]
-	  }
-
-	  deleteShapeAt(i) {
-	    this.shapes.splice(i, 1);
-	  }
-
-	  addSelectedShapeIfNotExist(shape) {
-	    if (!this.isShapeSelected(shape)) {
-	      this.selectedShapes.push(shape); 
-	    }
-	  }
-
-	  getSelectedShapes() {
-	    return this.selectedShapes 
-	  }
-
-	  isShapeSelected(shape) {
-	    return this.selectedShapes.includes(shape)
-	  }
-
-	  emptySelectedShapes() {
-	    this.selectedShapes = [];
 	  }
 	}
 
@@ -55441,8 +55403,7 @@
 	    this.isSelecting = false;
 
 	    this.dragOffsetX = 0;
-	    this.dragOffsetY = 0;
-	    
+	    this.dragOffsetY = 0;    
 	  }
 
 	  setNewState(state) {
@@ -55476,20 +55437,28 @@
 	  }
 
 	  startSelection(mousePosition) {
+	    const isGroupSelection = this.state.getSelectedShapes().length > 1;
+	    this.selectedShape = null;
 	    for (const shape of this.state.getShapes()) {
 	      if (shape.contains(mousePosition.x, mousePosition.y)) {
+	        if (!isGroupSelection) {
+	          this.state.deleteSelectedShapes();
+	          this.state.addSelectedShapeIfNotExist(shape);
+	        }
+
 	        this.isSelecting = false;
 	        this.isDragging = true;
 	        this.isDrawing = false;
-
-	        this.state.addSelectedShapeIfNotExist(shape);
-
 	        this.selectedShape = shape;
 	        this.dragOffsetX = mousePosition.x - shape.x;
 	        this.dragOffsetY = mousePosition.y - shape.y;
 
 	        this.draw();
-	      } 
+	      }     
+	    }
+
+	    if (!this.selectedShape) {
+	      this.state.deleteSelectedShapes();
 	    }
 	  }
 
@@ -55534,7 +55503,7 @@
 	  }
 
 	  selectAll() {
-	    this.state.emptySelectedShapes();
+	    this.state.deleteSelectedShapes();
 
 	    for (const shape of this.state.getShapes()) {
 	      this.state.addSelectedShapeIfNotExist(shape);
@@ -55544,7 +55513,7 @@
 	  }
 
 	  deselectAll() {
-	    this.state.emptySelectedShapes();
+	    this.state.deleteSelectedShapes();
 	    this.draw();
 	  }
 
@@ -55561,7 +55530,12 @@
 	      }
 	    }
 
-	    this.state.emptySelectedShapes();
+	    this.state.deleteSelectedShapes();
+	    this.draw();
+	  }
+
+	  deleteAll() {
+	    this.state.deleteShapes();
 	    this.draw();
 	  }
 
@@ -55580,6 +55554,52 @@
 	  clear() {
 	    this.ctx.clearRect(0, 0, this.width, this.height);
 	  }  
+	}
+
+	class State {
+	  constructor() {
+	    this.shapes = [];
+	    this.selectedShapes = [];
+	  }
+
+	  addShape(shape) {
+	    this.shapes.push(shape);
+	  }
+
+	  getShapes() {
+	    return this.shapes
+	  }
+
+	  getShapeAt(i) {
+	    return this.shapes[i]
+	  }
+
+	  deleteShapeAt(i) {
+	    this.shapes.splice(i, 1);
+	  }
+
+	  deleteShapes() {
+	    this.shapes = [];
+	    this.selectedShapes = [];
+	  }
+
+	  addSelectedShapeIfNotExist(shape) {
+	    if (!this.isShapeSelected(shape)) {
+	      this.selectedShapes.push(shape); 
+	    }
+	  }
+
+	  getSelectedShapes() {
+	    return this.selectedShapes 
+	  }
+
+	  isShapeSelected(shape) {
+	    return this.selectedShapes.includes(shape)
+	  }
+
+	  deleteSelectedShapes() {
+	    this.selectedShapes = [];
+	  }
 	}
 
 	class SelectionBox {

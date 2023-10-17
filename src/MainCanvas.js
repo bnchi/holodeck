@@ -2,47 +2,6 @@ import MainEventHandler from './MainEventHandler'
 import FreeHandShape from './FreeHandShape'
 import { CANVAS_EVENT } from './Tools'
 
-export class State {
-  constructor() {
-    this.shapes = []
-    this.selectedShapes = []
-  }
-
-  addShape(shape) {
-    this.shapes.push(shape)
-  }
-
-  getShapes() {
-    return this.shapes
-  }
-
-  getShapeAt(i) {
-    return this.shapes[i]
-  }
-
-  deleteShapeAt(i) {
-    this.shapes.splice(i, 1)
-  }
-
-  addSelectedShapeIfNotExist(shape) {
-    if (!this.isShapeSelected(shape)) {
-      this.selectedShapes.push(shape) 
-    }
-  }
-
-  getSelectedShapes() {
-    return this.selectedShapes 
-  }
-
-  isShapeSelected(shape) {
-    return this.selectedShapes.includes(shape)
-  }
-
-  emptySelectedShapes() {
-    this.selectedShapes = []
-  }
-}
-
 export default class Canvas extends MainEventHandler {
   constructor(canvas, state, selectionBox) {
     super(canvas)
@@ -61,8 +20,7 @@ export default class Canvas extends MainEventHandler {
     this.isSelecting = false
 
     this.dragOffsetX = 0
-    this.dragOffsetY = 0
-    
+    this.dragOffsetY = 0    
   }
 
   setNewState(state) {
@@ -96,20 +54,28 @@ export default class Canvas extends MainEventHandler {
   }
 
   startSelection(mousePosition) {
+    const isGroupSelection = this.state.getSelectedShapes().length > 1
+    this.selectedShape = null
     for (const shape of this.state.getShapes()) {
       if (shape.contains(mousePosition.x, mousePosition.y)) {
+        if (!isGroupSelection) {
+          this.state.deleteSelectedShapes()
+          this.state.addSelectedShapeIfNotExist(shape)
+        }
+
         this.isSelecting = false
         this.isDragging = true
         this.isDrawing = false
-
-        this.state.addSelectedShapeIfNotExist(shape)
-
         this.selectedShape = shape
         this.dragOffsetX = mousePosition.x - shape.x
         this.dragOffsetY = mousePosition.y - shape.y
 
         this.draw()
-      } 
+      }     
+    }
+
+    if (!this.selectedShape) {
+      this.state.deleteSelectedShapes()
     }
   }
 
@@ -154,7 +120,7 @@ export default class Canvas extends MainEventHandler {
   }
 
   selectAll() {
-    this.state.emptySelectedShapes()
+    this.state.deleteSelectedShapes()
 
     for (const shape of this.state.getShapes()) {
       this.state.addSelectedShapeIfNotExist(shape)
@@ -164,7 +130,7 @@ export default class Canvas extends MainEventHandler {
   }
 
   deselectAll() {
-    this.state.emptySelectedShapes()
+    this.state.deleteSelectedShapes()
     this.draw()
   }
 
@@ -181,7 +147,12 @@ export default class Canvas extends MainEventHandler {
       }
     }
 
-    this.state.emptySelectedShapes()
+    this.state.deleteSelectedShapes()
+    this.draw()
+  }
+
+  deleteAll() {
+    this.state.deleteShapes()
     this.draw()
   }
 
