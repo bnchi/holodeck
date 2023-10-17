@@ -95,6 +95,7 @@ export default class Canvas extends MainEventHandler {
       this.draw()
     } else if (this.isSelecting) {
       this.draw()
+      this.state.deleteSelectedShapes()
       this.selectionBox.draw(mousePosition.x, mousePosition.y)
       for (const shape of this.state.getShapes()) {
         if (this.selectionBox.isOverlapping(shape)) {
