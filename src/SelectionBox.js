@@ -14,16 +14,10 @@ export default class SelectionBox {
     this.width = x - this.startX
     this.height = y - this.startY
 
-    this.ctx.beginPath()
-    this.ctx.rect(this.startX, this.startY, this.width, this.height)
     this.ctx.setLineDash([2, 4])
     this.ctx.strokeStyle = "black"
     this.ctx.lineWidth = 2
-    this.ctx.stroke()
-  }
-
-  closePath() {
-    this.ctx.closePath()
+    this.ctx.strokeRect(this.startX, this.startY, this.width, this.height)
   }
 
   isOverlapping(shape) {

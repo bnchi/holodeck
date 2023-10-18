@@ -120,7 +120,8 @@ export default class Canvas extends MainEventHandler {
   getStyles() {
     return {
       strokeStyle: "black",
-      lineCap: "round"
+      lineCap: "round",
+      lineWidth: 2
     }
   }
 

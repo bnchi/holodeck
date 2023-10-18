@@ -16,6 +16,7 @@ export default class Square extends Shape {
     this.maxX = null
     this.maxX = null
 
+    console.log(style)
     this.style = style 
   }
 
