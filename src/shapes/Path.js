@@ -1,8 +1,9 @@
-import MainEventHandler from './MainEventHandler'
+import Shape from '../Shape'
+import { SHAPES } from '../ToolBox'
 
-export default class FreeHandShape extends MainEventHandler {
-  constructor(canvas, style) {
-    super(canvas)
+export default class Path extends Shape {
+  constructor(style, canvas) {
+    super(SHAPES.PATH, canvas)
 
     this.x = 0
     this.y = 0
@@ -26,27 +27,21 @@ export default class FreeHandShape extends MainEventHandler {
     this.y = startPosition.y 
 
     this.points.push({x: startPosition.x,  y: startPosition.y})
-
-    this.ctx.beginPath()
-    this.ctx.moveTo(startPosition.x, startPosition.y)
   }
 
   handleMouseMove(event) {
     const mousePosition = super.getPos(event)
     this.points.push({x: mousePosition.x, y: mousePosition.y})
-    this.ctx.lineTo(mousePosition.x, mousePosition.y)
-    this.ctx.stroke()
   }
 
   handleMouseUp() {
-    this.ctx.closePath()
     this.calculateBoundingBox()
     super.cleanUpEvents()
   } 
 
   draw() {
     Object.assign(this.ctx, this.style)
-
+    this.ctx.setLineDash([0,0])
  		const dx = this.x - this.points[0].x;
     const dy = this.y - this.points[0].y;
 

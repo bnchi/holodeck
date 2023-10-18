@@ -1,12 +1,12 @@
 import MainEventHandler from './MainEventHandler'
-import FreeHandShape from './FreeHandShape'
-import { CANVAS_EVENT } from './Tools'
+import ShapeFactory from './shapes/Factory'
+import { CANVAS_EVENT } from './ToolBox'
 
 export default class Canvas extends MainEventHandler {
   constructor(canvas, state, selectionBox) {
     super(canvas)
 
-    this.activeTool = CANVAS_EVENT.SELECTION
+    this.activeEvent = CANVAS_EVENT.SELECTION
     this.width = canvas.width
     this.height = canvas.height    
 
@@ -19,6 +19,8 @@ export default class Canvas extends MainEventHandler {
     this.isDrawing = false
     this.isSelecting = false
 
+    this.shape = null
+
     this.dragOffsetX = 0
     this.dragOffsetY = 0    
   }
@@ -28,32 +30,37 @@ export default class Canvas extends MainEventHandler {
     this.draw()
   }
 
-  setActiveTool(tool) {
-    this.activeTool = tool
+  setShape(shape) {
+    this.shape = shape
   }
    
+  setActiveEvent(event) {
+    this.activeEvent = event 
+  }
+
   handleMouseDown(event) {
     const mousePosition = super.getPos(event)
-    switch (this.activeTool) {
+    switch (this.activeEvent) {
       case CANVAS_EVENT.DRAWING:
+        if (!this.shape) throw new Error('Please provide a shape to draw')
         this.isDrawing = true
-        const shape = new FreeHandShape(this.canvas, this.getStyles())
+        this.isSelecting = false
+        const shape = new ShapeFactory(this.canvas).createShape(this.shape, this.getStyles())
         shape.startDrawing(mousePosition)
         this.state.addShape(shape)
         break
       case CANVAS_EVENT.SELECTION:
         this.isSelecting = true
         this.isDrawing = false
-        this.isDragging = false
         this.selectionBox.setPoint(mousePosition.x, mousePosition.y)
-        this.startSelection(mousePosition)
+        this.pathIntersectsMouse(mousePosition)
         break
       default:
         throw new Error('not implemented')
     }
   }
 
-  startSelection(mousePosition) {
+  pathIntersectsMouse(mousePosition) {
     const isGroupSelection = this.state.getSelectedShapes().length > 1
     this.selectedShape = null
     for (const shape of this.state.getShapes()) {
@@ -62,14 +69,12 @@ export default class Canvas extends MainEventHandler {
           this.state.deleteSelectedShapes()
           this.state.addSelectedShapeIfNotExist(shape)
         }
-
-        this.isSelecting = false
         this.isDragging = true
+        this.isSelecting = false
         this.isDrawing = false
         this.selectedShape = shape
         this.dragOffsetX = mousePosition.x - shape.x
         this.dragOffsetY = mousePosition.y - shape.y
-
         this.draw()
       }     
     }
@@ -80,10 +85,10 @@ export default class Canvas extends MainEventHandler {
   }
 
   handleMouseMove(event) {
-    if (this.isDrawing) return
-
     const mousePosition = super.getPos(event)
-    if (this.isDragging) {
+    if (this.isDrawing) {
+      this.draw()
+    } else  if (this.isDragging) {
       const mx = mousePosition.x - this.dragOffsetX
       const my = mousePosition.y - this.dragOffsetY
       const dx = mx - this.selectedShape.x
@@ -106,7 +111,7 @@ export default class Canvas extends MainEventHandler {
   }
 
   handleMouseUp() {
-    if (this.isSelecting) this.draw() // clear out the canvas from selection box
+    if (this.isSelecting || this.isDrawing) this.draw()
     this.isDrawing = false
     this.isDragging = false
     this.isSelecting = false
@@ -114,9 +119,8 @@ export default class Canvas extends MainEventHandler {
 
   getStyles() {
     return {
-      strokeStyle: "black", 
-      lineWidth: 7, 
-      lineCap: 'round'
+      strokeStyle: "black",
+      lineCap: "round"
     }
   }
 
@@ -161,7 +165,7 @@ export default class Canvas extends MainEventHandler {
     this.clear()
     
   	for (const shape of this.state.getShapes()) {
-    	shape.draw(this.ctx)
+    	shape.draw()
 
       if (this.state.isShapeSelected(shape)) {
         shape.drawBoundingBox()

@@ -55242,9 +55242,132 @@
 	  }
 	}
 
-	class FreeHandShape extends MainEventHandler {
-	  constructor(canvas, style) {
+	class Shape extends MainEventHandler {
+	  constructor(type, canvas) {
 	    super(canvas);
+	    this.type = type;
+	  }
+	}
+
+	const SHAPES = {
+	  SQUARE: 'Square',
+	  PATH: 'Path'
+	};
+
+	const CANVAS_EVENT = {
+	  DRAWING: 'drawing',
+	  SELECTION: 'selection'
+	};
+
+	const TOOL_BOX = {
+	  SELECTION: 'selection',
+	  DRAW_SQUARE: 'draw_square',
+	  FREE_DRAW: 'free_draw',
+	  SELECT_ALL: 'select_all',
+	  DESELECT_ALL: 'deselect_all',
+	  DELETE_SELECTED: 'delete_selected',
+	  DELETE_ALL: 'delete_all'
+	};
+
+	class ToolBox {
+	  constructor(canvas) {
+	    this.canvas = canvas;
+	  }
+
+	  invoke(tool) {
+	    switch (tool) {
+	      case TOOL_BOX.SELECTION:
+	        return this.canvas.setActiveEvent(CANVAS_EVENT.SELECTION)
+	      case TOOL_BOX.DRAW_SQUARE:
+	        this.canvas.setShape(SHAPES.SQUARE);
+	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
+	      case TOOL_BOX.FREE_DRAW:
+	        this.canvas.setShape(SHAPES.PATH);
+	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
+	      case TOOL_BOX.SELECT_ALL:
+	        return this.canvas.selectAll()
+	      case TOOL_BOX.DESELECT_ALL:
+	        return this.canvas.deselectAll() 
+	      case TOOL_BOX.DELETE_SELECTED:
+	        return this.canvas.deleteSelected()
+	      case TOOL_BOX.DELETE_ALL:
+	        return this.canvas.deleteAll()
+	      default:
+	        throw new Error('Not there')
+	    }
+	  }
+	}
+
+	class Square extends Shape {
+	  constructor(style, canvas) { 
+	    super(SHAPES.SQUARE, canvas); 
+	    this.x = 0;
+	    this.y = 0;
+
+	    this.w = 0;
+	    this.h = 0;
+
+	    this.minX = this.x;
+	    this.minY = this.y;
+
+	    this.maxX = null;
+	    this.maxX = null;
+
+	    this.style = style; 
+	  }
+
+	  startDrawing(startPosition) {
+	    Object.assign(this.ctx, this.style);
+	    this.x = startPosition.x;
+	    this.y = startPosition.y; 
+	  }
+
+	  handleMouseMove(event) {
+	    const mousePosition = super.getPos(event);
+	    this.w = mousePosition.x - this.x;
+	    this.h = mousePosition.y - this.y;
+
+	  }
+
+	  handleMouseUp() {
+	    super.cleanUpEvents();
+	    this.calculateBoundingBox();
+	  } 
+
+	  contains(mx, my) {
+	    return (mx >= this.x) && (mx <= this.maxX) 
+	      && (my >= this.y) && (my <= this.maxY);
+	  }
+	  
+	  draw() {
+	    Object.assign(this.ctx, this.style);
+	    this.ctx.setLineDash([0,0]);
+	    this.ctx.beginPath();
+	    this.ctx.rect(this.x, this.y, this.w, this.h);
+	    this.ctx.stroke();
+	    this.ctx.closePath();
+	    this.calculateBoundingBox();
+	  }
+
+	  calculateBoundingBox() {
+	    this.minX = this.x;
+	    this.minY = this.y;
+
+	    this.maxX = this.w + this.x;
+	    this.maxY = this.h + this.y;
+	  }
+
+	  drawBoundingBox() {
+	    this.ctx.strokeStyle = "red";
+	    this.ctx.lineWidth = 2;
+	    this.ctx.setLineDash([2, 4]);
+	    this.ctx.strokeRect(this.x,this.y,this.w,this.h);
+	  }
+	}
+
+	class Path extends Shape {
+	  constructor(style, canvas) {
+	    super(SHAPES.PATH, canvas);
 
 	    this.x = 0;
 	    this.y = 0;
@@ -55268,27 +55391,21 @@
 	    this.y = startPosition.y; 
 
 	    this.points.push({x: startPosition.x,  y: startPosition.y});
-
-	    this.ctx.beginPath();
-	    this.ctx.moveTo(startPosition.x, startPosition.y);
 	  }
 
 	  handleMouseMove(event) {
 	    const mousePosition = super.getPos(event);
 	    this.points.push({x: mousePosition.x, y: mousePosition.y});
-	    this.ctx.lineTo(mousePosition.x, mousePosition.y);
-	    this.ctx.stroke();
 	  }
 
 	  handleMouseUp() {
-	    this.ctx.closePath();
 	    this.calculateBoundingBox();
 	    super.cleanUpEvents();
 	  } 
 
 	  draw() {
 	    Object.assign(this.ctx, this.style);
-
+	    this.ctx.setLineDash([0,0]);
 	 		const dx = this.x - this.points[0].x;
 	    const dy = this.y - this.points[0].y;
 
@@ -55345,42 +55462,19 @@
 	  }
 	}
 
-	const CANVAS_EVENT = {
-	  DRAWING: 'drawing',
-	  SELECTION: 'selection'
-	};
-
-	const TOOLS = {
-	  SELECTION: 'selection',
-	  FREE_DRAW: 'free_draw',
-	  SELECT_ALL: 'select_all',
-	  DESELECT_ALL: 'deselect_all',
-	  DELETE_SELECTED: 'delete_selected',
-	  DELETE_ALL: 'delete_all'
-	};
-
-
-	class ToolInvoker {
+	class ShapeFactory {
 	  constructor(canvas) {
 	    this.canvas = canvas;
 	  }
 
-	  invoke(tool) {
-	    switch (tool) {
-	      case TOOLS.SELECTION:
-	        return this.canvas.setActiveTool(CANVAS_EVENT.SELECTION)
-	      case TOOLS.FREE_DRAW:
-	        return this.canvas.setActiveTool(CANVAS_EVENT.DRAWING)
-	      case TOOLS.SELECT_ALL:
-	        return this.canvas.selectAll()
-	      case TOOLS.DESELECT_ALL:
-	        return this.canvas.deselectAll() 
-	      case TOOLS.DELETE_SELECTED:
-	        return this.canvas.deleteSelected()
-	      case TOOLS.DELETE_ALL:
-	        return this.canvas.deleteAll()
+	  createShape(type, ...args) {
+	    switch (type) {
+	      case SHAPES.SQUARE:
+	        return new Square(...args, this.canvas)
+	      case SHAPES.PATH:
+	        return new Path(...args, this.canvas)
 	      default:
-	        throw new Error('Not there')
+	        throw new Error(`Invalid shape type: ${type}`);
 	    }
 	  }
 	}
@@ -55389,7 +55483,7 @@
 	  constructor(canvas, state, selectionBox) {
 	    super(canvas);
 
-	    this.activeTool = CANVAS_EVENT.SELECTION;
+	    this.activeEvent = CANVAS_EVENT.SELECTION;
 	    this.width = canvas.width;
 	    this.height = canvas.height;    
 
@@ -55402,6 +55496,8 @@
 	    this.isDrawing = false;
 	    this.isSelecting = false;
 
+	    this.shape = null;
+
 	    this.dragOffsetX = 0;
 	    this.dragOffsetY = 0;    
 	  }
@@ -55411,32 +55507,37 @@
 	    this.draw();
 	  }
 
-	  setActiveTool(tool) {
-	    this.activeTool = tool;
+	  setShape(shape) {
+	    this.shape = shape;
 	  }
 	   
+	  setActiveEvent(event) {
+	    this.activeEvent = event; 
+	  }
+
 	  handleMouseDown(event) {
 	    const mousePosition = super.getPos(event);
-	    switch (this.activeTool) {
+	    switch (this.activeEvent) {
 	      case CANVAS_EVENT.DRAWING:
+	        if (!this.shape) throw new Error('Please provide a shape to draw')
 	        this.isDrawing = true;
-	        const shape = new FreeHandShape(this.canvas, this.getStyles());
+	        this.isSelecting = false;
+	        const shape = new ShapeFactory(this.canvas).createShape(this.shape, this.getStyles());
 	        shape.startDrawing(mousePosition);
 	        this.state.addShape(shape);
 	        break
 	      case CANVAS_EVENT.SELECTION:
 	        this.isSelecting = true;
 	        this.isDrawing = false;
-	        this.isDragging = false;
 	        this.selectionBox.setPoint(mousePosition.x, mousePosition.y);
-	        this.startSelection(mousePosition);
+	        this.pathIntersectsMouse(mousePosition);
 	        break
 	      default:
 	        throw new Error('not implemented')
 	    }
 	  }
 
-	  startSelection(mousePosition) {
+	  pathIntersectsMouse(mousePosition) {
 	    const isGroupSelection = this.state.getSelectedShapes().length > 1;
 	    this.selectedShape = null;
 	    for (const shape of this.state.getShapes()) {
@@ -55445,14 +55546,12 @@
 	          this.state.deleteSelectedShapes();
 	          this.state.addSelectedShapeIfNotExist(shape);
 	        }
-
-	        this.isSelecting = false;
 	        this.isDragging = true;
+	        this.isSelecting = false;
 	        this.isDrawing = false;
 	        this.selectedShape = shape;
 	        this.dragOffsetX = mousePosition.x - shape.x;
 	        this.dragOffsetY = mousePosition.y - shape.y;
-
 	        this.draw();
 	      }     
 	    }
@@ -55463,10 +55562,10 @@
 	  }
 
 	  handleMouseMove(event) {
-	    if (this.isDrawing) return
-
 	    const mousePosition = super.getPos(event);
-	    if (this.isDragging) {
+	    if (this.isDrawing) {
+	      this.draw();
+	    } else  if (this.isDragging) {
 	      const mx = mousePosition.x - this.dragOffsetX;
 	      const my = mousePosition.y - this.dragOffsetY;
 	      const dx = mx - this.selectedShape.x;
@@ -55489,7 +55588,7 @@
 	  }
 
 	  handleMouseUp() {
-	    if (this.isSelecting) this.draw(); // clear out the canvas from selection box
+	    if (this.isSelecting || this.isDrawing) this.draw();
 	    this.isDrawing = false;
 	    this.isDragging = false;
 	    this.isSelecting = false;
@@ -55497,9 +55596,8 @@
 
 	  getStyles() {
 	    return {
-	      strokeStyle: "black", 
-	      lineWidth: 7, 
-	      lineCap: 'round'
+	      strokeStyle: "black",
+	      lineCap: "round"
 	    }
 	  }
 
@@ -55544,7 +55642,7 @@
 	    this.clear();
 	    
 	  	for (const shape of this.state.getShapes()) {
-	    	shape.draw(this.ctx);
+	    	shape.draw();
 
 	      if (this.state.isShapeSelected(shape)) {
 	        shape.drawBoundingBox();
@@ -55618,12 +55716,17 @@
 	  draw(x, y) {
 	    this.width = x - this.startX;
 	    this.height = y - this.startY;
+
 	    this.ctx.beginPath();
 	    this.ctx.rect(this.startX, this.startY, this.width, this.height);
 	    this.ctx.setLineDash([2, 4]);
 	    this.ctx.strokeStyle = "black";
 	    this.ctx.lineWidth = 2;
 	    this.ctx.stroke();
+	  }
+
+	  closePath() {
+	    this.ctx.closePath();
 	  }
 
 	  isOverlapping(shape) {
@@ -55658,7 +55761,7 @@
 	  ];
 
 	  const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas));
-	  const toolInvoker = new ToolInvoker(canvas);
+	  const toolInvoker = new ToolBox(canvas);
 
 	  for (const child of pdfPagesElem.childNodes) {
 	    child.addEventListener('click', async (event) => {
@@ -55674,11 +55777,11 @@
 	  });
 
 	  const fragment = new DocumentFragment();
-	  for (const toolKey of Object.keys(TOOLS)) {
+	  for (const toolKey of Object.keys(TOOL_BOX)) {
 	    const button = document.createElement("button");
 	    button.textContent = toolKey;
-	    button.addEventListener('click', () => toolInvoker.invoke(TOOLS[toolKey])); 
-	    button.setAttribute(toolKey, TOOLS[toolKey]);
+	    button.addEventListener('click', () => toolInvoker.invoke(TOOL_BOX[toolKey])); 
+	    button.setAttribute(toolKey, TOOL_BOX[toolKey]);
 	    fragment.append(button);
 	  }
 	  tools.append(fragment);

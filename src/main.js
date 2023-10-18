@@ -2,7 +2,7 @@ import { PDFDrawer } from '../pdf'
 import Canvas from './MainCanvas'
 import State from './State'
 import SelectionBox from './SelectionBox'
-import ToolInvoker, { TOOLS } from './Tools'
+import ToolBox, { TOOL_BOX } from './ToolBox'
 
 async function main() {
   const pdfCanvas = document.getElementById('pdfCanvas')
@@ -23,7 +23,7 @@ async function main() {
   ]
 
   const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas))
-  const toolInvoker = new ToolInvoker(canvas)
+  const toolInvoker = new ToolBox(canvas)
 
   for (const child of pdfPagesElem.childNodes) {
     child.addEventListener('click', async (event) => {
@@ -39,11 +39,11 @@ async function main() {
   })
 
   const fragment = new DocumentFragment()
-  for (const toolKey of Object.keys(TOOLS)) {
+  for (const toolKey of Object.keys(TOOL_BOX)) {
     const button = document.createElement("button")
     button.textContent = toolKey
-    button.addEventListener('click', () => toolInvoker.invoke(TOOLS[toolKey])) 
-    button.setAttribute(toolKey, TOOLS[toolKey])
+    button.addEventListener('click', () => toolInvoker.invoke(TOOL_BOX[toolKey])) 
+    button.setAttribute(toolKey, TOOL_BOX[toolKey])
     fragment.append(button)
   }
   tools.append(fragment)
