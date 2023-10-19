@@ -1,7 +1,7 @@
 import Shape from '../Shape'
 import { SHAPES } from '../ToolBox'
 
-export default class Circle extends Shape {
+export default class Ellipse extends Shape {
   constructor(style, canvas) { 
     super(SHAPES.CIRCLE, canvas) 
     this.x = 0
@@ -28,6 +28,7 @@ export default class Circle extends Shape {
   handleMouseMove(event) {
     const mousePosition = super.getPos(event)
     this.w = mousePosition.x - this.x
+    this.h = mousePosition.y - this.y
   }
 
   handleMouseUp() {
@@ -44,7 +45,7 @@ export default class Circle extends Shape {
     Object.assign(this.ctx, this.style)
     this.ctx.setLineDash([0,0]) 
     this.ctx.beginPath()
-    this.ctx.arc(this.x, this.y, this.w, 0, Math.PI * 2)
+    this.ctx.ellipse(this.x, this.y, this.w, this.h, 0, 0, Math.PI * 2)
     this.ctx.stroke()
     this.ctx.closePath()
     this.calculateBoundingBox()
@@ -52,18 +53,16 @@ export default class Circle extends Shape {
 
   calculateBoundingBox() {
     this.minX = this.x - this.w
-    this.minY = this.y - this.w
+    this.minY = this.y - this.h
 
     this.maxX = this.w + this.x
-    this.maxY = this.w + this.y
-
-    console.log(this.minX, this.maxX)
+    this.maxY = this.h + this.y
   }
 
   drawBoundingBox() {
     this.ctx.strokeStyle = "red"
     this.ctx.lineWidth = 2
     this.ctx.setLineDash([2, 4])
-    this.ctx.strokeRect(this.minX, this.minY, this.w * 2, this.w * 2)
+    this.ctx.strokeRect(this.minX, this.minY, this.w * 2, this.h * 2)
   }
 }

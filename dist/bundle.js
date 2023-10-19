@@ -55252,7 +55252,7 @@
 	const SHAPES = {
 	  SQUARE: 'Square',
 	  PATH: 'Path',
-	  CIRCLE: 'Circle'
+	  ELLIPSE: 'Ellipse'
 	};
 
 	const CANVAS_EVENT = {
@@ -55263,7 +55263,7 @@
 	const TOOL_BOX = {
 	  SELECTION: 'selection',
 	  DRAW_SQUARE: 'draw_square',
-	  DRAW_CIRCLE: 'draw_circle',
+	  DRAW_ELLIPSE: 'draw_ellipse',
 	  FREE_DRAW: 'free_draw',
 	  SELECT_ALL: 'select_all',
 	  DESELECT_ALL: 'deselect_all',
@@ -55280,8 +55280,8 @@
 	    switch (tool) {
 	      case TOOL_BOX.SELECTION:
 	        return this.canvas.setActiveEvent(CANVAS_EVENT.SELECTION)
-	      case TOOL_BOX.DRAW_CIRCLE:
-	        this.canvas.setShape(SHAPES.CIRCLE);
+	      case TOOL_BOX.DRAW_ELLIPSE:
+	        this.canvas.setShape(SHAPES.ELLIPSE);
 	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
 	      case TOOL_BOX.DRAW_SQUARE:
 	        this.canvas.setShape(SHAPES.SQUARE);
@@ -55467,7 +55467,7 @@
 	  }
 	}
 
-	class Circle extends Shape {
+	class Ellipse extends Shape {
 	  constructor(style, canvas) { 
 	    super(SHAPES.CIRCLE, canvas); 
 	    this.x = 0;
@@ -55494,6 +55494,7 @@
 	  handleMouseMove(event) {
 	    const mousePosition = super.getPos(event);
 	    this.w = mousePosition.x - this.x;
+	    this.h = mousePosition.y - this.y;
 	  }
 
 	  handleMouseUp() {
@@ -55510,7 +55511,7 @@
 	    Object.assign(this.ctx, this.style);
 	    this.ctx.setLineDash([0,0]); 
 	    this.ctx.beginPath();
-	    this.ctx.arc(this.x, this.y, this.w, 0, Math.PI * 2);
+	    this.ctx.ellipse(this.x, this.y, this.w, this.h, 0, 0, Math.PI * 2);
 	    this.ctx.stroke();
 	    this.ctx.closePath();
 	    this.calculateBoundingBox();
@@ -55518,19 +55519,17 @@
 
 	  calculateBoundingBox() {
 	    this.minX = this.x - this.w;
-	    this.minY = this.y - this.w;
+	    this.minY = this.y - this.h;
 
 	    this.maxX = this.w + this.x;
-	    this.maxY = this.w + this.y;
-
-	    console.log(this.minX, this.maxX);
+	    this.maxY = this.h + this.y;
 	  }
 
 	  drawBoundingBox() {
 	    this.ctx.strokeStyle = "red";
 	    this.ctx.lineWidth = 2;
 	    this.ctx.setLineDash([2, 4]);
-	    this.ctx.strokeRect(this.minX, this.minY, this.w * 2, this.w * 2);
+	    this.ctx.strokeRect(this.minX, this.minY, this.w * 2, this.h * 2);
 	  }
 	}
 
@@ -55545,8 +55544,8 @@
 	        return new Square(...args, this.canvas)
 	      case SHAPES.PATH:
 	        return new Path(...args, this.canvas)
-	      case SHAPES.CIRCLE:
-	        return new Circle(...args, this.canvas)
+	      case SHAPES.ELLIPSE:
+	        return new Ellipse(...args, this.canvas)
 	      default:
 	        throw new Error(`Invalid shape type: ${type}`);
 	    }

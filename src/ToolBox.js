@@ -1,7 +1,7 @@
 export const SHAPES = {
   SQUARE: 'Square',
   PATH: 'Path',
-  CIRCLE: 'Circle'
+  ELLIPSE: 'Ellipse'
 }
 
 export const CANVAS_EVENT = {
@@ -12,7 +12,7 @@ export const CANVAS_EVENT = {
 export const TOOL_BOX = {
   SELECTION: 'selection',
   DRAW_SQUARE: 'draw_square',
-  DRAW_CIRCLE: 'draw_circle',
+  DRAW_ELLIPSE: 'draw_ellipse',
   FREE_DRAW: 'free_draw',
   SELECT_ALL: 'select_all',
   DESELECT_ALL: 'deselect_all',
@@ -29,8 +29,8 @@ export default class ToolBox {
     switch (tool) {
       case TOOL_BOX.SELECTION:
         return this.canvas.setActiveEvent(CANVAS_EVENT.SELECTION)
-      case TOOL_BOX.DRAW_CIRCLE:
-        this.canvas.setShape(SHAPES.CIRCLE)
+      case TOOL_BOX.DRAW_ELLIPSE:
+        this.canvas.setShape(SHAPES.ELLIPSE)
         return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
       case TOOL_BOX.DRAW_SQUARE:
         this.canvas.setShape(SHAPES.SQUARE)
