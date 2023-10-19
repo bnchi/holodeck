@@ -1,9 +1,9 @@
 import Shape from '../Shape'
 import { SHAPES } from '../ToolBox'
 
-export default class Square extends Shape {
+export default class Circle extends Shape {
   constructor(style, canvas) { 
-    super(SHAPES.SQUARE, canvas) 
+    super(SHAPES.CIRCLE, canvas) 
     this.x = 0
     this.y = 0
 
@@ -11,7 +11,7 @@ export default class Square extends Shape {
     this.h = 0
 
     this.minX = this.x
-    this.minY = this.y
+    this.minY = this.y 
 
     this.maxX = null
     this.maxX = null
@@ -22,14 +22,12 @@ export default class Square extends Shape {
   startDrawing(startPosition) {
     Object.assign(this.ctx, this.style)
     this.x = startPosition.x
-    this.y = startPosition.y 
+    this.y = startPosition.y
   }
 
   handleMouseMove(event) {
     const mousePosition = super.getPos(event)
     this.w = mousePosition.x - this.x
-    this.h = mousePosition.y - this.y
-
   }
 
   handleMouseUp() {
@@ -38,32 +36,34 @@ export default class Square extends Shape {
   } 
 
   contains(mx, my) {
-    return (mx >= this.x) && (mx <= this.maxX) 
-      && (my >= this.y) && (my <= this.maxY);
+    return (mx >= this.minX) && (mx <= this.maxX) 
+      && (my >= this.minY) && (my <= this.maxY);
   }
   
   draw() {
     Object.assign(this.ctx, this.style)
-    this.ctx.setLineDash([0,0])
+    this.ctx.setLineDash([0,0]) 
     this.ctx.beginPath()
-    this.ctx.rect(this.x, this.y, this.w, this.h)
+    this.ctx.arc(this.x, this.y, this.w, 0, Math.PI * 2)
     this.ctx.stroke()
     this.ctx.closePath()
     this.calculateBoundingBox()
   }
 
   calculateBoundingBox() {
-    this.minX = this.x
-    this.minY = this.y
+    this.minX = this.x - this.w
+    this.minY = this.y - this.w
 
     this.maxX = this.w + this.x
-    this.maxY = this.h + this.y
+    this.maxY = this.w + this.y
+
+    console.log(this.minX, this.maxX)
   }
 
   drawBoundingBox() {
     this.ctx.strokeStyle = "red"
     this.ctx.lineWidth = 2
     this.ctx.setLineDash([2, 4])
-    this.ctx.strokeRect(this.x,this.y,this.w,this.h)
+    this.ctx.strokeRect(this.minX, this.minY, this.w * 2, this.w * 2)
   }
 }
