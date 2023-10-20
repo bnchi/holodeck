@@ -1,7 +1,8 @@
 export const SHAPES = {
   SQUARE: 'Square',
   PATH: 'Path',
-  ELLIPSE: 'Ellipse'
+  ELLIPSE: 'Ellipse',
+  LINE: 'Line'
 }
 
 export const CANVAS_EVENT = {
@@ -13,11 +14,12 @@ export const TOOL_BOX = {
   SELECTION: 'selection',
   DRAW_SQUARE: 'draw_square',
   DRAW_ELLIPSE: 'draw_ellipse',
+  DRAW_LINE: 'draw_line',
   FREE_DRAW: 'free_draw',
   SELECT_ALL: 'select_all',
   DESELECT_ALL: 'deselect_all',
   DELETE_SELECTED: 'delete_selected',
-  DELETE_ALL: 'delete_all'
+  DELETE_ALL: 'delete_all',
 }
 
 export default class ToolBox {
@@ -34,6 +36,9 @@ export default class ToolBox {
         return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
       case TOOL_BOX.DRAW_SQUARE:
         this.canvas.setShape(SHAPES.SQUARE)
+        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
+      case TOOL_BOX.DRAW_LINE:
+        this.canvas.setShape(SHAPES.LINE)
         return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
       case TOOL_BOX.FREE_DRAW:
         this.canvas.setShape(SHAPES.PATH)

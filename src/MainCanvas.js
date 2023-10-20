@@ -1,6 +1,6 @@
 import MainEventHandler from './MainEventHandler'
 import ShapeFactory from './shapes/Factory'
-import { CANVAS_EVENT } from './ToolBox'
+import { SHAPES, CANVAS_EVENT } from './ToolBox'
 
 export default class Canvas extends MainEventHandler {
   constructor(canvas, state, selectionBox) {
@@ -89,14 +89,7 @@ export default class Canvas extends MainEventHandler {
     if (this.isDrawing) {
       this.draw()
     } else  if (this.isDragging) {
-      const mx = mousePosition.x - this.dragOffsetX
-      const my = mousePosition.y - this.dragOffsetY
-      const dx = mx - this.selectedShape.x
-      const dy = my - this.selectedShape.y
-      for (const selectedShape of this.state.getSelectedShapes()) {
-        selectedShape.x += dx 
-        selectedShape.y += dy 
-      }
+      this.moveShapes(mousePosition)
       this.draw()
     } else if (this.isSelecting) {
       this.draw()
@@ -106,6 +99,23 @@ export default class Canvas extends MainEventHandler {
         if (this.selectionBox.isOverlapping(shape)) {
           this.state.addSelectedShapeIfNotExist(shape)
         }
+      }
+    }
+  }
+
+  moveShapes(mousePosition) {
+    const mx = mousePosition.x - this.dragOffsetX
+    const my = mousePosition.y - this.dragOffsetY
+    const dx = mx - this.selectedShape.x
+    const dy = my - this.selectedShape.y
+    for (const selectedShape of this.state.getSelectedShapes()) {
+      selectedShape.x += dx
+      selectedShape.y += dy
+
+      // lines are connected by two points
+      if (selectedShape.type == SHAPES.LINE) {
+        selectedShape.x2 += dx
+        selectedShape.y2 += dy
       }
     }
   }

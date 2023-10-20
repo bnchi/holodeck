@@ -55252,7 +55252,8 @@
 	const SHAPES = {
 	  SQUARE: 'Square',
 	  PATH: 'Path',
-	  ELLIPSE: 'Ellipse'
+	  ELLIPSE: 'Ellipse',
+	  LINE: 'Line'
 	};
 
 	const CANVAS_EVENT = {
@@ -55264,11 +55265,12 @@
 	  SELECTION: 'selection',
 	  DRAW_SQUARE: 'draw_square',
 	  DRAW_ELLIPSE: 'draw_ellipse',
+	  DRAW_LINE: 'draw_line',
 	  FREE_DRAW: 'free_draw',
 	  SELECT_ALL: 'select_all',
 	  DESELECT_ALL: 'deselect_all',
 	  DELETE_SELECTED: 'delete_selected',
-	  DELETE_ALL: 'delete_all'
+	  DELETE_ALL: 'delete_all',
 	};
 
 	class ToolBox {
@@ -55285,6 +55287,9 @@
 	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
 	      case TOOL_BOX.DRAW_SQUARE:
 	        this.canvas.setShape(SHAPES.SQUARE);
+	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
+	      case TOOL_BOX.DRAW_LINE:
+	        this.canvas.setShape(SHAPES.LINE);
 	        return this.canvas.setActiveEvent(CANVAS_EVENT.DRAWING)
 	      case TOOL_BOX.FREE_DRAW:
 	        this.canvas.setShape(SHAPES.PATH);
@@ -55411,17 +55416,17 @@
 	  draw() {
 	    Object.assign(this.ctx, this.style);
 	    this.ctx.setLineDash([0,0]);
-	 		const dx = this.x - this.points[0].x;
+	    const dx = this.x - this.points[0].x;
 	    const dy = this.y - this.points[0].y;
 
 	    for (let i = 0; i < this.points.length; i++) {
-	    	this.points[i].x += dx;
+	      this.points[i].x += dx;
 	      this.points[i].y += dy;
 	    }
-	    
+
 	    this.ctx.beginPath();
 	    this.ctx.moveTo(this.points[0].x , this.points[0].y);
-	 
+
 	    for (let i = 1; i < this.points.length - 2; i++) {
 	      const p1x = (this.points[i].x + this.points[i + 1].x) / 2;
 	      const p2x = (this.points[i].y + this.points[i + 1].y) / 2; 
@@ -55537,6 +55542,85 @@
 	  }
 	}
 
+	class Line extends Shape {
+	  constructor(style, canvas) { 
+	    super(SHAPES.LINE, canvas); 
+
+	    this.x = 0;
+	    this.y = 0;
+
+	    this.x2 = 0;
+	    this.y2 = 0;
+
+	    this.w = 0;
+	    this.h = 0;
+
+	    this.minX = this.x;
+	    this.minY = this.y;
+
+	    this.maxX = this.x2;
+	    this.maxX = this.y2;
+
+	    this.style = style; 
+	  }
+
+	  startDrawing(startPosition) {
+	    Object.assign(this.ctx, this.style);
+	    this.x = startPosition.x;
+	    this.y = startPosition.y; 
+	  }
+
+	  handleMouseMove(event) {
+	    const mousePosition = super.getPos(event);
+	    this.x2 = mousePosition.x;
+	    this.y2 = mousePosition.y;
+	  }
+
+	  handleMouseUp(event) {
+	    const mousePosition = super.getPos(event);
+	    this.x2 = mousePosition.x;
+	    this.y2 = mousePosition.y;
+	    super.cleanUpEvents();
+	    this.calculateBoundingBox();
+	  } 
+
+	  contains(mx, my) {
+	    return (mx >= this.minX) && (mx <= this.maxX) 
+	      && (my >= this.minY) && (my <= this.maxY);
+	  }
+	  
+	  draw() {
+	    if (!this.x || !this.y || !this.x2 || !this.y2) return
+	    Object.assign(this.ctx, this.style);
+	    this.ctx.setLineDash([0,0]);
+	    this.ctx.beginPath();
+	    this.ctx.moveTo(this.x, this.y);
+	    this.ctx.lineTo(this.x2, this.y2);
+	    this.ctx.stroke();
+	    this.ctx.closePath();
+	    this.calculateBoundingBox();
+	  }
+
+	  calculateBoundingBox() {
+	    const strokeWidth = this.style.lineWidth / 2;
+	    this.maxX = Math.max(this.x + strokeWidth, this.x2 + strokeWidth);
+	    this.minX = Math.min(this.x - strokeWidth, this.x2 - strokeWidth);
+
+	    this.maxY = Math.max(this.y + strokeWidth, this.y2 + strokeWidth);
+	    this.minY = Math.min(this.y - strokeWidth, this.y2 - strokeWidth);
+
+	    this.w = this.maxX - this.minX;
+	    this.h = this.maxY - this.minY;
+	  }
+
+	  drawBoundingBox() {
+	    this.ctx.strokeStyle = "red";
+	    this.ctx.lineWidth = 2;
+	    this.ctx.setLineDash([2, 4]);
+	    this.ctx.strokeRect(this.minX, this.minY, this.w, this.h);
+	  }
+	}
+
 	class ShapeFactory {
 	  constructor(canvas) {
 	    this.canvas = canvas;
@@ -55550,6 +55634,8 @@
 	        return new Path(...args, this.canvas)
 	      case SHAPES.ELLIPSE:
 	        return new Ellipse(...args, this.canvas)
+	      case SHAPES.LINE:
+	        return new Line(...args, this.canvas)
 	      default:
 	        throw new Error(`Invalid shape type: ${type}`);
 	    }
@@ -55643,14 +55729,7 @@
 	    if (this.isDrawing) {
 	      this.draw();
 	    } else  if (this.isDragging) {
-	      const mx = mousePosition.x - this.dragOffsetX;
-	      const my = mousePosition.y - this.dragOffsetY;
-	      const dx = mx - this.selectedShape.x;
-	      const dy = my - this.selectedShape.y;
-	      for (const selectedShape of this.state.getSelectedShapes()) {
-	        selectedShape.x += dx; 
-	        selectedShape.y += dy; 
-	      }
+	      this.moveShapes(mousePosition);
 	      this.draw();
 	    } else if (this.isSelecting) {
 	      this.draw();
@@ -55660,6 +55739,23 @@
 	        if (this.selectionBox.isOverlapping(shape)) {
 	          this.state.addSelectedShapeIfNotExist(shape);
 	        }
+	      }
+	    }
+	  }
+
+	  moveShapes(mousePosition) {
+	    const mx = mousePosition.x - this.dragOffsetX;
+	    const my = mousePosition.y - this.dragOffsetY;
+	    const dx = mx - this.selectedShape.x;
+	    const dy = my - this.selectedShape.y;
+	    for (const selectedShape of this.state.getSelectedShapes()) {
+	      selectedShape.x += dx;
+	      selectedShape.y += dy;
+
+	      // lines are connected by two points
+	      if (selectedShape.type == SHAPES.LINE) {
+	        selectedShape.x2 += dx;
+	        selectedShape.y2 += dy;
 	      }
 	    }
 	  }
