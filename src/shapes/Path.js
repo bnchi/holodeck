@@ -53,8 +53,11 @@ export default class Path extends Shape {
     this.ctx.beginPath()
     this.ctx.moveTo(this.points[0].x , this.points[0].y)
  
-    for (let i = 1; i < this.points.length; i++) {
-    	this.ctx.lineTo(this.points[i].x, this.points[i].y)
+    for (let i = 1; i < this.points.length - 2; i++) {
+      const p1x = (this.points[i].x + this.points[i + 1].x) / 2
+      const p2x = (this.points[i].y + this.points[i + 1].y) / 2 
+
+      this.ctx.quadraticCurveTo(this.points[i].x, this.points[i].y, p1x, p2x)
     }
 
     this.ctx.stroke()
@@ -73,16 +76,17 @@ export default class Path extends Shape {
     let maxX = this.points[0].x
     let maxY = this.points[0].y
 
+    const halfLineWidth = this.style.lineWidth / 2
     for (let i = 1; i < this.points.length; i++) {
       const {x, y} = this.points[i]
-      if (x < minX) minX = x
-      if (x > maxX) maxX = x
-      if (y < minY) minY = y
-      if (y > maxY) maxY = y
+      minX = Math.min(minX, x - halfLineWidth)
+      maxX = Math.max(maxX, x + halfLineWidth)
+      minY = Math.min(minY, y - halfLineWidth)
+      maxY = Math.max(maxY, y + halfLineWidth)
     }
 
-    this.w = maxX - minX + 7
-    this.h = maxY - minY + 7
+    this.w = maxX - minX
+    this.h = maxY - minY
 
     this.minX = minX
     this.maxX = maxX

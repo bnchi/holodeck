@@ -121,7 +121,7 @@ export default class Canvas extends MainEventHandler {
     return {
       strokeStyle: "black",
       lineCap: "round",
-      lineWidth: 2
+      lineWidth: 39
     }
   }
 
