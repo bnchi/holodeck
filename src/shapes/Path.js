@@ -42,17 +42,17 @@ export default class Path extends Shape {
   draw() {
     Object.assign(this.ctx, this.style)
     this.ctx.setLineDash([0,0])
- 		const dx = this.x - this.points[0].x;
+    const dx = this.x - this.points[0].x;
     const dy = this.y - this.points[0].y;
 
     for (let i = 0; i < this.points.length; i++) {
-    	this.points[i].x += dx
+      this.points[i].x += dx
       this.points[i].y += dy
     }
-    
+
     this.ctx.beginPath()
     this.ctx.moveTo(this.points[0].x , this.points[0].y)
- 
+
     for (let i = 1; i < this.points.length - 2; i++) {
       const p1x = (this.points[i].x + this.points[i + 1].x) / 2
       const p2x = (this.points[i].y + this.points[i + 1].y) / 2 
