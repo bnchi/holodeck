@@ -13,8 +13,8 @@ export default class Ellipse extends Shape {
     this.minX = this.x
     this.minY = this.y 
 
-    this.maxX = null
-    this.maxX = null
+    this.maxX = 0
+    this.maxX = 0
 
     this.style = style 
   }

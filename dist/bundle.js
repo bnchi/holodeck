@@ -55498,8 +55498,8 @@
 	    this.minX = this.x;
 	    this.minY = this.y; 
 
-	    this.maxX = null;
-	    this.maxX = null;
+	    this.maxX = this.x;
+	    this.maxX = this.y;
 
 	    this.style = style; 
 	  }
@@ -55513,7 +55513,7 @@
 	  handleMouseMove(event) {
 	    const mousePosition = super.getPos(event);
 	    this.w = mousePosition.x - this.x;
-	    this.h = mousePosition.y - this.y;
+	    this.h = Math.max(0, mousePosition.x - this.y);
 	  }
 
 	  handleMouseUp() {
