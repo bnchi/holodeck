@@ -39,6 +39,11 @@ export default class Path extends Shape {
     super.cleanUpEvents()
   } 
 
+  move(dx, dy) {
+    this.x += dx
+    this.y += dy
+  }
+
   draw() {
     Object.assign(this.ctx, this.style)
     this.ctx.setLineDash([0,0])

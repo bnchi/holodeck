@@ -36,6 +36,11 @@ export default class Ellipse extends Shape {
     this.calculateBoundingBox()
   } 
 
+  move(dx, dy) {
+    this.x += dx
+    this.y += dy
+  }
+
   contains(mx, my) {
     return (mx >= this.minX) && (mx <= this.maxX) 
       && (my >= this.minY) && (my <= this.maxY);

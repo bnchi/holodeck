@@ -43,6 +43,14 @@ export default class Line extends Shape {
     this.calculateBoundingBox()
   } 
 
+  move(dx, dy) {
+    this.x += dx
+    this.y += dy
+
+    this.x2 += dx
+    this.y2 += dy
+  }
+
   contains(mx, my) {
     return (mx >= this.minX) && (mx <= this.maxX) 
       && (my >= this.minY) && (my <= this.maxY);

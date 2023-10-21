@@ -109,14 +109,7 @@ export default class Canvas extends MainEventHandler {
     const dx = mx - this.selectedShape.x
     const dy = my - this.selectedShape.y
     for (const selectedShape of this.state.getSelectedShapes()) {
-      selectedShape.x += dx
-      selectedShape.y += dy
-
-      // lines are connected by two points
-      if (selectedShape.type == SHAPES.LINE) {
-        selectedShape.x2 += dx
-        selectedShape.y2 += dy
-      }
+      selectedShape.move(dx, dy)
     }
   }
 

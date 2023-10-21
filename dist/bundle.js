@@ -55344,6 +55344,11 @@
 	    this.calculateBoundingBox();
 	  } 
 
+	  move(dx, dy) {
+	    this.x += dx;
+	    this.y += dy;
+	  }
+
 	  contains(mx, my) {
 	    return (mx >= this.x) && (mx <= this.maxX) 
 	      && (my >= this.y) && (my <= this.maxY);
@@ -55412,6 +55417,11 @@
 	    this.calculateBoundingBox();
 	    super.cleanUpEvents();
 	  } 
+
+	  move(dx, dy) {
+	    this.x += dx;
+	    this.y += dy;
+	  }
 
 	  draw() {
 	    Object.assign(this.ctx, this.style);
@@ -55511,6 +55521,11 @@
 	    this.calculateBoundingBox();
 	  } 
 
+	  move(dx, dy) {
+	    this.x += dx;
+	    this.y += dy;
+	  }
+
 	  contains(mx, my) {
 	    return (mx >= this.minX) && (mx <= this.maxX) 
 	      && (my >= this.minY) && (my <= this.maxY);
@@ -55583,6 +55598,14 @@
 	    super.cleanUpEvents();
 	    this.calculateBoundingBox();
 	  } 
+
+	  move(dx, dy) {
+	    this.x += dx;
+	    this.y += dy;
+
+	    this.x2 += dx;
+	    this.y2 += dy;
+	  }
 
 	  contains(mx, my) {
 	    return (mx >= this.minX) && (mx <= this.maxX) 
@@ -55749,14 +55772,7 @@
 	    const dx = mx - this.selectedShape.x;
 	    const dy = my - this.selectedShape.y;
 	    for (const selectedShape of this.state.getSelectedShapes()) {
-	      selectedShape.x += dx;
-	      selectedShape.y += dy;
-
-	      // lines are connected by two points
-	      if (selectedShape.type == SHAPES.LINE) {
-	        selectedShape.x2 += dx;
-	        selectedShape.y2 += dy;
-	      }
+	      selectedShape.move(dx, dy);
 	    }
 	  }
 

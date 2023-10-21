@@ -37,6 +37,11 @@ export default class Square extends Shape {
     this.calculateBoundingBox()
   } 
 
+  move(dx, dy) {
+    this.x += dx
+    this.y += dy
+  }
+
   contains(mx, my) {
     return (mx >= this.x) && (mx <= this.maxX) 
       && (my >= this.y) && (my <= this.maxY);
