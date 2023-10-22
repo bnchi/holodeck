@@ -55498,8 +55498,8 @@
 	    this.minX = this.x;
 	    this.minY = this.y; 
 
-	    this.maxX = this.x;
-	    this.maxX = this.y;
+	    this.maxX = null;
+	    this.maxX = null;
 
 	    this.style = style; 
 	  }
@@ -55513,7 +55513,7 @@
 	  handleMouseMove(event) {
 	    const mousePosition = super.getPos(event);
 	    this.w = mousePosition.x - this.x;
-	    this.h = Math.max(0, mousePosition.x - this.y);
+	    this.h = mousePosition.y - this.y;
 	  }
 
 	  handleMouseUp() {
@@ -55926,6 +55926,37 @@
 	  }
 	}
 
+	const DB_NAME = 'holodeck';
+
+	class Strore {
+	  constructor() {
+	    if (!window.indexedDB) {
+	      throw new Error("indexedDB isn't supported by your browser")
+	    }
+
+	    this.connection = null;
+	  }
+
+	  async getConnection() {
+	    try {
+	      if (!this.connection) {
+	        this.connection = await this.openDB();
+	      }
+	      return this.connection
+	    } catch (err) {
+	      console.error(err);
+	    }
+	  }
+
+	  openDB() {
+	    return new Promise((resolve, reject) => {
+	      const request = window.indexedDB.open(DB_NAME);
+	      request.onerror = () => reject(request.error);
+	      request.onsuccess = () => resolve(request.result);
+	    })
+	  }
+	}
+
 	async function main() {
 	  const pdfCanvas = document.getElementById('pdfCanvas');
 	  const drawingCanvas = document.getElementById('drawingCanvas');
@@ -55969,6 +56000,11 @@
 	    fragment.append(button);
 	  }
 	  tools.append(fragment);
+
+
+	  const store = new Strore();
+
+	  console.log(store.getConnection());
 	}
 
 	main();
