@@ -3,20 +3,24 @@ import Canvas from './MainCanvas'
 import State from './State'
 import SelectionBox from './SelectionBox'
 import ToolBox, { TOOL_BOX } from './ToolBox'
+import Store from './Store'
 
+// (TODO) THIS REQUIRE REFACTOR
 async function main() {
   const pdfCanvas = document.getElementById('pdfCanvas')
   const drawingCanvas = document.getElementById('drawingCanvas')
   const pdfPagesElem = document.querySelector(".pdf-layers")
   const tools = document.getElementById("tool-box")
 
+  // PDF STUFF STARTS
   const pdfObj = new PDFDrawer(pdfCanvas, pdfPagesElem)
   await pdfObj.createPDF("http://localhost:3000/test.pdf")
 
   await pdfObj.loadMainPage(1)
   await pdfObj.loadPagesPreview()
 
-  const pagesState = [
+  // CANVAS STUFF STARTS
+  const pagesState = [ // this should be built from the total number of pages from pdf objects
     new State(),
     new State(),
     new State()
@@ -24,7 +28,9 @@ async function main() {
 
   const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas))
   const toolInvoker = new ToolBox(canvas)
+  // CANVAS STUFF ENDS
 
+  // the UI start
   for (const child of pdfPagesElem.childNodes) {
     child.addEventListener('click', async (event) => {
       const pageId = parseInt(event.target.id.split("-")[2])
@@ -47,6 +53,20 @@ async function main() {
     fragment.append(button)
   }
   tools.append(fragment)
+  // The UI end
+  
+  // getting the projects ..
+  const store = new Store()
+  const projectsCursor = await store.getProjects()
+  projectsCursor.onerror = (event) => console.error(event.target.error)
+  projectsCursor.onsuccess = (event) => {
+    const cursor = event.target.result
+    if (cursor) {
+      console.log(cursor.value)
+      cursor.continue()
+    } 
+  }
+  // GETTINGS THE PROJECTS END
 }
 
 main()
