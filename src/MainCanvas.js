@@ -1,6 +1,6 @@
 import MainEventHandler from './MainEventHandler'
 import ShapeFactory from './shapes/Factory'
-import { SHAPES, CANVAS_EVENT } from './ToolBox'
+import { CANVAS_EVENT } from './ToolBox'
 
 export default class Canvas extends MainEventHandler {
   constructor(canvas, state, selectionBox) {
@@ -27,6 +27,16 @@ export default class Canvas extends MainEventHandler {
 
   setNewState(state) {
     this.state = state
+    this.draw()
+  }
+
+  redoState() {
+    this.state.redo()
+    this.draw()
+  }
+
+  undoState() {
+    this.state.undo()
     this.draw()
   }
 
@@ -61,13 +71,13 @@ export default class Canvas extends MainEventHandler {
   }
 
   pathIntersectsMouse(mousePosition) {
-    const isGroupSelection = this.state.getSelectedShapes().length > 1
+    const isGroupSelection = this.state.getSelected().length > 1
     this.selectedShape = null
     for (const shape of this.state.getShapes()) {
       if (shape.contains(mousePosition.x, mousePosition.y)) {
         if (!isGroupSelection) {
-          this.state.deleteSelectedShapes()
-          this.state.addSelectedShapeIfNotExist(shape)
+          this.state.removeSelections()
+          this.state.select(shape)
         }
         this.isDragging = true
         this.isSelecting = false
@@ -80,7 +90,7 @@ export default class Canvas extends MainEventHandler {
     }
 
     if (!this.selectedShape) {
-      this.state.deleteSelectedShapes()
+      this.state.removeSelections()
     }
   }
 
@@ -93,11 +103,11 @@ export default class Canvas extends MainEventHandler {
       this.draw()
     } else if (this.isSelecting) {
       this.draw()
-      this.state.deleteSelectedShapes()
+      this.state.removeSelections()
       this.selectionBox.draw(mousePosition.x, mousePosition.y)
       for (const shape of this.state.getShapes()) {
         if (this.selectionBox.isOverlapping(shape)) {
-          this.state.addSelectedShapeIfNotExist(shape)
+          this.state.select(shape)
         }
       }
     }
@@ -108,7 +118,7 @@ export default class Canvas extends MainEventHandler {
     const my = mousePosition.y - this.dragOffsetY
     const dx = mx - this.selectedShape.x
     const dy = my - this.selectedShape.y
-    for (const selectedShape of this.state.getSelectedShapes()) {
+    for (const selectedShape of this.state.getSelected()) {
       selectedShape.move(dx, dy)
     }
   }
@@ -129,34 +139,17 @@ export default class Canvas extends MainEventHandler {
   }
 
   selectAll() {
-    this.state.deleteSelectedShapes()
-
-    for (const shape of this.state.getShapes()) {
-      this.state.addSelectedShapeIfNotExist(shape)
-    }
-
+    this.state.selectAll() 
     this.draw()
   }
 
   deselectAll() {
-    this.state.deleteSelectedShapes()
+    this.state.removeSelections()
     this.draw()
   }
 
   deleteSelected() {
-    const selectedShapes = this.state.getSelectedShapes()
-
-    for (let i = 0; i < selectedShapes.length; i++) {
-      for (let j = 0; j < this.state.getShapes().length; j++) {
-        const shape = this.state.getShapeAt(j)
-        if (this.state.selectedShapes[i] == shape) {
-          this.state.deleteShapeAt(j)
-          continue
-        }
-      }
-    }
-
-    this.state.deleteSelectedShapes()
+    this.state.deleteSelected()
     this.draw()
   }
 
@@ -171,7 +164,7 @@ export default class Canvas extends MainEventHandler {
   	for (const shape of this.state.getShapes()) {
     	shape.draw()
 
-      if (this.state.isShapeSelected(shape)) {
+      if (shape.isSelected) {
         shape.drawBoundingBox()
       }
     }

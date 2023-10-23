@@ -20,6 +20,8 @@ export const TOOL_BOX = {
   DESELECT_ALL: 'deselect_all',
   DELETE_SELECTED: 'delete_selected',
   DELETE_ALL: 'delete_all',
+  UNDO: 'undo',
+  REDO: 'redo'
 }
 
 export default class ToolBox {
@@ -51,6 +53,10 @@ export default class ToolBox {
         return this.canvas.deleteSelected()
       case TOOL_BOX.DELETE_ALL:
         return this.canvas.deleteAll()
+      case TOOL_BOX.UNDO:
+        return this.canvas.undoState()
+      case TOOL_BOX.REDO:
+        return this.canvas.redoState()
       default:
         throw new Error('Not there')
     }

@@ -1,9 +1,9 @@
-import { PDFDrawer } from '../pdf'
 import Canvas from './MainCanvas'
 import State from './State'
 import SelectionBox from './SelectionBox'
 import ToolBox, { TOOL_BOX } from './ToolBox'
 import Store from './Store'
+import { PDFDrawer } from '../pdf'
 
 // (TODO) THIS REQUIRE REFACTOR
 async function main() {
