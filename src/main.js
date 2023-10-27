@@ -4,6 +4,7 @@ import SelectionBox from './SelectionBox'
 import ToolBox, { TOOL_BOX } from './ToolBox'
 import Store from './Store'
 import { PDFDrawer } from '../pdf'
+import ShapeFactory from './shapes/Factory'
 
 // (TODO) THIS REQUIRE REFACTOR
 async function main() {
@@ -26,7 +27,13 @@ async function main() {
     new State()
   ]
 
-  const canvas = new Canvas(drawingCanvas, pagesState[0], new SelectionBox(drawingCanvas))
+  const canvas = new Canvas(
+    drawingCanvas, 
+    pagesState[0], 
+    new SelectionBox(drawingCanvas),
+    new ShapeFactory(drawingCanvas)
+  )
+
   const toolInvoker = new ToolBox(canvas)
   // CANVAS STUFF ENDS
 

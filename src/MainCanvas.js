@@ -3,7 +3,12 @@ import ShapeFactory from './shapes/Factory'
 import { CANVAS_EVENT } from './ToolBox'
 
 export default class Canvas extends MainEventHandler {
-  constructor(canvas, state, selectionBox) {
+  constructor(
+    canvas, 
+    state, 
+    selectionBox,
+    shapeFactory
+  ) {
     super(canvas)
 
     this.activeEvent = CANVAS_EVENT.SELECTION
@@ -20,7 +25,7 @@ export default class Canvas extends MainEventHandler {
     this.isSelecting = false
 
     this.shape = null
-
+    this.shapeFactory = shapeFactory
     this.dragOffsetX = 0
     this.dragOffsetY = 0    
   }
@@ -55,7 +60,8 @@ export default class Canvas extends MainEventHandler {
         if (!this.shape) throw new Error('Please provide a shape to draw')
         this.isDrawing = true
         this.isSelecting = false
-        const shape = new ShapeFactory(this.canvas).createShape(this.shape, this.getStyles())
+        const shape = this.shapeFactory
+          .createShape(this.shape, this.getStyles())
         shape.startDrawing(mousePosition)
         this.state.addShape(shape)
         break

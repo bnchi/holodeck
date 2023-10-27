@@ -6,7 +6,6 @@ const ACTIONS = {
 export default class State {
   constructor() {
     this.shapes = []
-
     this.actions = []
     this.history = []
   }
@@ -56,10 +55,6 @@ export default class State {
 
   getShapeAt(i) {
     return this.shapes[i]
-  }
-
-  deleteShapeAt(i) {
-    this.shapes.splice(i, 1)
   }
 
   deleteShapes() {
